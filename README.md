@@ -17,7 +17,7 @@ The Pion ecosystem lacks a fully-featured, community-maintained application that
 ## Project Goals
 
 1. Deliver an SFU with feature-parity to modern commercial offerings.
-   * For example: First-class support for SVC, simulcast, and multicast.
+   * For example: First-class support for SVC, simulcast, and multicasting a single stream to multiple rooms from a single source.
 2. Be cloud-native by design.
    * Simple, horizontally-scalable architecture.
    * Multiple SFU instances can serve the same room concurrently.
@@ -26,13 +26,13 @@ The Pion ecosystem lacks a fully-featured, community-maintained application that
    * Low-level API for advanced use-cases, users should be able to re-implement the same features in the high-level API and provide their own interfaces, This should be abstracted away from non power users.
 4. Provide a clean, typed Web SDK.
 5. Ship a reference web application with a modern UI.
-6. Supply an SDK for embedded devices.
+6. Supply an SDK for embedded / IoT devices (Minimum spec requirements will be evaluated in the future, and direct hardware acceleration will be evaluated), Using Pion compiled with tinygo, This will require finishing the tinygo support in Pion.
 7. Include WHIP/WHEP support from day one.
 
 ## Pain Points with the Current Pion-Based Stack
 
 1. RTX/FEC handling is opaque. An SFU cannot easily strip, regenerate, or adapt redundancy streams—especially in multi-rendition, multicasting, or SVC scenarios.
-2. Transport state is tightly coupled to in-memory stateful objects, preventing seamless migration of streams between SFU instances (UDP, DTLS, SRTP, SCTP etc).
+2. Transport state is tightly coupled to in-memory stateful objects, preventing seamless migration of streams between SFU instances (UDP, DTLS, SRTP, SCTP etc), For security reasons, this will not include the TLS state, Will require finishing the DTLS restart (which should be even simpler with DTLS 1.3).
 3. Limited support for modern codecs features.
 4. Incomplete statistics and congestion-control APIs.
 5. Security hardening (DTLS/SRTP cipher suites, DTLS 1.3, rate limiting, quota management) is missing.
