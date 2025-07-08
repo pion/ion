@@ -65,6 +65,7 @@ Because many applications need programmable access to the SFU, not just a "play/
    * ICE-Lite can be enabled when the SFU is deployed with a public IP address, allowing for simpler and faster connectivity establishment.
    * Constrained devices may also benefit from operating in ICE-Lite mode, particularly when acting as passive endpoints in controlled environments.
    * This mode should be selectively applied based on client type policies (see item 12), ensuring appropriate behavior for both full-featured and limited-capability endpoints.
+
 What the SDK should let you do:
 1. Control permissions & scopes, issue, refresh, and introspect tokens for every room, user, or stream.
 2. Stream and control, list the streams a user may see, selectively subscribe/forward, and throttle or terminate feeds.
