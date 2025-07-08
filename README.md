@@ -46,7 +46,25 @@ Because many applications need programmable access to the SFU, not just a "play/
       * A searchable index
       * Clear sectioning between server-side (SFU) and client-side (SDK) concerns
    * Encourage contributions to documentation and make it easy for users to suggest changes or report unclear sections.
-
+11. Enable visibility and control over peer data usage.
+   * Particularly important in mobile or bandwidth-constrained environments, where applying usage policies can prevent overconsumption.
+   * The system should detect inactive media producers (e.g., sources not being consumed) and allow application-level logic to determine whether to stop their transmission.
+   * As mentioned in item 3, the low-level API must expose sufficient context to enable custom data usage strategies.
+12. Ensure adaptable and standards-compliant support for diverse client types, as defined in Section 2.2 of RFC 8825.
+   * WebRTC Endpoints / Ion WebRTC Clients (IWC): General-purpose clients that require most features offered by a complete WebRTC stack.
+   * WebRTC Devices / Ion Media Producers (IMP): Embedded or resource-constrained clients — such as single-board computers (e.g., Raspberry Pi) — that convert RTSP streams into RTP streams optimized for WebRTC. In many cases, these clients operate effectively without the full WebRTC feature set.
+13. Provide sample client implementations for supported client types.
+   * Demonstrate best practices and integration paths for both IWC and IMP clients.
+   * Include examples of full WebRTC clients and minimal/embedded producers.
+   * Ensure compatibility and ease of integration with the provided SDKs and signaling models.
+14. Offer a modular and extensible signage system via SDKs.
+   * Enable developers to integrate branded or dynamic signage elements (e.g., overlays, titles, watermarks) into streams.
+   * Provide APIs to control placement, timing, visibility, and interactivity of signage.
+   * Support live updates and customization from both server- and client-side logic.
+15. Optimize connectivity by supporting ICE-Lite, as outlined in Section 2.5 of RFC 8445.
+   * ICE-Lite can be enabled when the SFU is deployed with a public IP address, allowing for simpler and faster connectivity establishment.
+   * Constrained devices may also benefit from operating in ICE-Lite mode, particularly when acting as passive endpoints in controlled environments.
+   * This mode should be selectively applied based on client type policies (see item 12), ensuring appropriate behavior for both full-featured and limited-capability endpoints.
 What the SDK should let you do:
 1. Control permissions & scopes, issue, refresh, and introspect tokens for every room, user, or stream.
 2. Stream and control, list the streams a user may see, selectively subscribe/forward, and throttle or terminate feeds.
