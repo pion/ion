@@ -30,6 +30,11 @@ The Pion ecosystem lacks a fully-featured, community-maintained application that
 7. Include WHIP support from day one, WHEP support will be evaluated during stage one.
 8. Why ship an SDK instead of client?
 Because many applications need programmable access to the SFU, not just a "play/pause" client. An SDK lets developers embed, extend, and automate SFU specific features from their own code-base.
+9. Design a modular, multi-strategy authentication system.
+   * Enable multiple strategies such as centralized authentication through OIDC, with: cookie-based sessions, JWT bearer tokens, mTLS for internal services, and OAuth2 client credentials for automation and service-to-service access.
+   * Provide a clear interface for custom auth plugins, so that developers can add support for enterprise SSO, API keys, federated identity, or anonymous access.
+   * The SFU and APIs should remain agnostic to the auth backend and rely on validated identity claims (e.g., user ID, roles, scopes) passed through a secure context. This is important for the SDK to be able to use the same authentication strategy as the SFU, and to able to control the SFU's behavior based on auth claims (if needed).
+   * Make it easy to deploy and switch between strategies using configuration, and for people to add their own auth strategies.
 
 What the SDK should let you do:
 1. Control permissions & scopes, issue, refresh, and introspect tokens for every room, user, or stream.
