@@ -35,6 +35,17 @@ Because many applications need programmable access to the SFU, not just a "play/
    * Provide a clear interface for custom auth plugins, so that developers can add support for enterprise SSO, API keys, federated identity, or anonymous access.
    * The SFU and APIs should remain agnostic to the auth backend and rely on validated identity claims (e.g., user ID, roles, scopes) passed through a secure context. This is important for the SDK to be able to use the same authentication strategy as the SFU, and to able to control the SFU's behavior based on auth claims (if needed).
    * Make it easy to deploy and switch between strategies using configuration, and for people to add their own auth strategies.
+10. Deliver high-quality, beginner-friendly documentation for both the SFU architecture and SDK APIs
+   * Strive for clear, concise, and well-structured documentation, designed for developers who have only a basic understanding of WebRTC.
+   * Include quick start guides for common use cases (e.g., joining a room, publishing a stream, subscribing to a feed, recording, broadcasting, signaling flows).
+   * Document the SFU's internal architecture, component responsibilities, and data/control flow to aid contributors and integrators.
+   * Provide thorough documentation for each API offered — explain what it does, when and why to use it, and code examples demonstrating usage.
+   * Clearly separate reference documentation (types, endpoints, options) from conceptual guides and tutorials.
+   * Organize the docs to make them easy to navigate:
+      * A logical structure for onboarding (e.g., "Getting Started", "How It Works", "Examples")
+      * A searchable index
+      * Clear sectioning between server-side (SFU) and client-side (SDK) concerns
+   * Encourage contributions to documentation and make it easy for users to suggest changes or report unclear sections.
 
 What the SDK should let you do:
 1. Control permissions & scopes, issue, refresh, and introspect tokens for every room, user, or stream.
