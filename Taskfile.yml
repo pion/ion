@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2025 The Pion community <https://pion.ly>
+# SPDX-License-Identifier: MIT
+
+version: '3'
+
+tasks:
+  default:
+    desc: Run the default task (build)
+    deps: [build]
+  build:
+    desc: Build the ion binary
+    cmds:
+      - mkdir -p bin
+      - GO111MODULE=on CGO_ENABLED=0 go build -o bin/ion ./cmd/ion
+    sources:
+      - cmd/ion/**/*.go
+      - internal/**/*.go
+    generates:
+      - bin/ion
+  test:
+    desc: Run unit tests
+    cmds:
+      - go test ./...
+
+
