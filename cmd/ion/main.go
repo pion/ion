@@ -20,9 +20,9 @@ func main() {
 		fmt.Fprintf(os.Stderr, "config error: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("LOG: level=%s format=%s\n", cfg.Log.Level, cfg.Log.Format)
-	fmt.Printf("METRICS: addr=%s\n", cfg.Metrics.Addr)
-	fmt.Printf("HTTP: addr=%s\n", cfg.HTTP.Addr)
+	fmt.Printf("LOG: level=%s format=%s\n", cfg.Telemetry.Logs.Level, cfg.Telemetry.Logs.Format)
+	fmt.Printf("METRICS PROMETHEUS: addr=%s\n", cfg.Telemetry.Metrics.Prometheus.Addr)
+	fmt.Printf("TRACE: service name=%s\n", cfg.Telemetry.Traces.ServiceName)
 
 	fmt.Println(core.HelloWorld())
 }

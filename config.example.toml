@@ -1,35 +1,20 @@
 # SPDX-FileCopyrightText: 2025 The Pion community <https://pion.ly>
 # SPDX-License-Identifier: MIT
 
-[log]
+[telemetry.logs]
 level  = "info"
 format = "text"
 
-[metrics]
-addr = ":2112"
+[telemetry.metrics.prometheus]
+enabled = true
+addr    = ":2112"
 
-[http]
-addr = ":8080"
+[telemetry.metrics.otlp]
+enabled  = false
+endpoint = ""
 
-[tracing]
+[telemetry.traces]
 enabled       = false
 service_name  = "ion"
 otlp_endpoint = ""
 sample_ratio  = 0.0
-
-[signaling]
-addr          = ":8080"
-path          = "/ws"
-read_timeout  = "10s"
-write_timeout = "10s"
-
-[sfu]
-max_publish_bitrate   = 1500000
-max_subscribe_bitrate = 2500000
-enable_recorder       = false
-
-[webrtc]
-ice_servers      = ["stun:stun.l.google.com:19302"]
-nat_1to1_ips     = []
-preferred_codecs = ["vp8","opus"]
-mtu              = 1200
