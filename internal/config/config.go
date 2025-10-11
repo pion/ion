@@ -38,21 +38,25 @@ type PrometheusConfig struct {
 	Enabled bool   `mapstructure:"enabled"`
 }
 
-type OTLPConfig struct {
+type OTLPMetricsConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 	Enabled  bool   `mapstructure:"enabled"`
 }
 
 type TelemetryMetricsConfig struct {
-	Prometheus PrometheusConfig `mapstructure:"prometheus"`
-	OTLP       OTLPConfig       `mapstructure:"otlp"`
+	Prometheus PrometheusConfig  `mapstructure:"prometheus"`
+	OTLP       OTLPMetricsConfig `mapstructure:"otlp"`
+}
+
+type OTLPTracesConfig struct {
+	ServiceName string  `mapstructure:"service_name"`
+	Endpoint    string  `mapstructure:"endpoint"`
+	SampleRatio float64 `mapstructure:"sample_ratio"`
+	Enabled     bool    `mapstructure:"enabled"`
 }
 
 type TelemetryTracesConfig struct {
-	ServiceName  string  `mapstructure:"service_name"`
-	OTLPEndpoint string  `mapstructure:"otlp_endpoint"`
-	SampleRatio  float64 `mapstructure:"sample_ratio"`
-	Enabled      bool    `mapstructure:"enabled"`
+	OTLP OTLPTracesConfig
 }
 
 type TelemetryConfig struct {
@@ -77,16 +81,18 @@ func DefaultConfig() Config {
 					Enabled: false,
 					Addr:    DefaultPrometheusAddr,
 				},
-				OTLP: OTLPConfig{
+				OTLP: OTLPMetricsConfig{
 					Enabled:  false,
 					Endpoint: DefaultOTLPEndpoint,
 				},
 			},
 			Traces: TelemetryTracesConfig{
-				Enabled:      false,
-				ServiceName:  DefaultServiceName,
-				OTLPEndpoint: DefaultOTLPEndpoint,
-				SampleRatio:  DefaultTraceSample,
+				OTLP: OTLPTracesConfig{
+					Enabled:     false,
+					ServiceName: DefaultServiceName,
+					Endpoint:    DefaultOTLPEndpoint,
+					SampleRatio: DefaultTraceSample,
+				},
 			},
 		},
 	}
@@ -99,8 +105,10 @@ func RegisterFlags(fs *pflag.FlagSet) {
 	fs.String("config", "", "Path to config file (TOML)")
 
 	// telemetry.logs
-	fs.String("telemetry.logs.level", def.Telemetry.Logs.Level, "Log level (debug|info|warn|error)")
-	fs.String("telemetry.logs.format", string(def.Telemetry.Logs.Format), "Log format (text|json)")
+	fs.String("telemetry.logs.level", def.Telemetry.Logs.Level,
+		"Log level (debug|info|warn|error)")
+	fs.String("telemetry.logs.format", string(def.Telemetry.Logs.Format),
+		"Log format (text|json)")
 
 	// telemetry.metrics.prometheus
 	fs.Bool("telemetry.metrics.prometheus.enabled", def.Telemetry.Metrics.Prometheus.Enabled,
@@ -109,15 +117,20 @@ func RegisterFlags(fs *pflag.FlagSet) {
 		"Prometheus metrics bind address (host:port or :port)")
 
 	// telemetry.metrics.otlp
-	fs.Bool("telemetry.metrics.otlp.enabled", def.Telemetry.Metrics.OTLP.Enabled, "Enable OTLP metrics exporter (push)")
+	fs.Bool("telemetry.metrics.otlp.enabled", def.Telemetry.Metrics.OTLP.Enabled,
+		"Enable OTLP metrics exporter (push)")
 	fs.String("telemetry.metrics.otlp.endpoint", def.Telemetry.Metrics.OTLP.Endpoint,
 		"OTLP metrics endpoint (e.g. host:4317)")
 
-	// telemetry.traces
-	fs.Bool("telemetry.traces.enabled", def.Telemetry.Traces.Enabled, "Enable OpenTelemetry tracing")
-	fs.String("telemetry.traces.service_name", def.Telemetry.Traces.ServiceName, "Tracing service name")
-	fs.String("telemetry.traces.otlp_endpoint", def.Telemetry.Traces.OTLPEndpoint, "OTLP traces endpoint (e.g. host:4317)")
-	fs.Float64("telemetry.traces.sample_ratio", def.Telemetry.Traces.SampleRatio, "Tracing sampler ratio in [0.0,1.0]")
+	// telemetry.traces.otlp
+	fs.Bool("telemetry.traces.otlp.enabled", def.Telemetry.Traces.OTLP.Enabled,
+		"Enable OpenTelemetry tracing via OTLP")
+	fs.String("telemetry.traces.otlp.service_name", def.Telemetry.Traces.OTLP.ServiceName,
+		"Tracing service name")
+	fs.String("telemetry.traces.otlp.endpoint", def.Telemetry.Traces.OTLP.Endpoint,
+		"OTLP traces endpoint (e.g. host:4317)")
+	fs.Float64("telemetry.traces.otlp.sample_ratio", def.Telemetry.Traces.OTLP.SampleRatio,
+		"Tracing sampler ratio in [0.0,1.0]")
 }
 
 // Load returns config struct for ION.
@@ -135,10 +148,10 @@ func Load(fs *pflag.FlagSet) (Config, error) {
 	vp.SetDefault("telemetry.metrics.otlp.enabled", cfg.Telemetry.Metrics.OTLP.Enabled)
 	vp.SetDefault("telemetry.metrics.otlp.endpoint", cfg.Telemetry.Metrics.OTLP.Endpoint)
 
-	vp.SetDefault("telemetry.traces.enabled", cfg.Telemetry.Traces.Enabled)
-	vp.SetDefault("telemetry.traces.service_name", cfg.Telemetry.Traces.ServiceName)
-	vp.SetDefault("telemetry.traces.otlp_endpoint", cfg.Telemetry.Traces.OTLPEndpoint)
-	vp.SetDefault("telemetry.traces.sample_ratio", cfg.Telemetry.Traces.SampleRatio)
+	vp.SetDefault("telemetry.traces.otlp.enabled", cfg.Telemetry.Traces.OTLP.Enabled)
+	vp.SetDefault("telemetry.traces.otlp.service_name", cfg.Telemetry.Traces.OTLP.ServiceName)
+	vp.SetDefault("telemetry.traces.otlp.endpoint", cfg.Telemetry.Traces.OTLP.Endpoint)
+	vp.SetDefault("telemetry.traces.otlp.sample_ratio", cfg.Telemetry.Traces.OTLP.SampleRatio)
 
 	// Env
 	vp.SetEnvPrefix("ION")

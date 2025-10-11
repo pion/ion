@@ -13,8 +13,8 @@ addr    = ":2112"
 enabled  = false
 endpoint = ""
 
-[telemetry.traces]
+[telemetry.traces.otlp]
 enabled       = false
 service_name  = "ion"
-otlp_endpoint = ""
+endpoint = ""
 sample_ratio  = 0.0

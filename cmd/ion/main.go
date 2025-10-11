@@ -22,7 +22,7 @@ func main() {
 	}
 	fmt.Printf("LOG: level=%s format=%s\n", cfg.Telemetry.Logs.Level, cfg.Telemetry.Logs.Format)
 	fmt.Printf("METRICS PROMETHEUS: addr=%s\n", cfg.Telemetry.Metrics.Prometheus.Addr)
-	fmt.Printf("TRACE: service name=%s\n", cfg.Telemetry.Traces.ServiceName)
+	fmt.Printf("TRACE OTLP: service name=%s\n", cfg.Telemetry.Traces.OTLP.ServiceName)
 
 	fmt.Println(core.HelloWorld())
 }
