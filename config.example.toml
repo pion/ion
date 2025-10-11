@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2025 The Pion community <https://pion.ly>
+# SPDX-License-Identifier: MIT
+
+[telemetry.logs]
+level  = "info"
+format = "text"
+
+[telemetry.metrics.prometheus]
+enabled = true
+addr    = ":2112"
+
+[telemetry.metrics.otlp]
+enabled  = false
+endpoint = ""
+
+[telemetry.traces.otlp]
+enabled       = false
+service_name  = "ion"
+endpoint = ""
+sample_ratio  = 0.0
