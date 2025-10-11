@@ -74,7 +74,7 @@ func DefaultConfig() Config {
 			},
 			Metrics: TelemetryMetricsConfig{
 				Prometheus: PrometheusConfig{
-					Enabled: true,
+					Enabled: false,
 					Addr:    DefaultPrometheusAddr,
 				},
 				OTLP: OTLPConfig{
