@@ -5,6 +5,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -13,10 +14,16 @@ import (
 )
 
 type LogFormat string
+type WriterType string
+
+var ErrInvalidWriterType = errors.New("invalid writer type")
+var ErrInvalidFormatType = errors.New("invalid format type")
 
 const (
-	LogFormatText LogFormat = "text"
-	LogFormatJSON LogFormat = "json"
+	LogFormatText LogFormat  = "text"
+	LogFormatJSON LogFormat  = "json"
+	WriterStderr  WriterType = "stderr"
+	WriterStdout  WriterType = "stdout"
 )
 
 const (
