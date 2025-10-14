@@ -9,6 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/pion/ion/v2/internal/config"
@@ -97,6 +98,9 @@ func captureStdout(fn func()) string {
 }
 
 func TestScopeLevelAndModuleAttr(t *testing.T) {
+	if runtime.GOOS == "js" {
+		t.Skip("stdout/stderr capture not supported under js/wasm; skip")
+	}
 	opts := Options{
 		DefaultLevel:  "info", // debug should be dropped unless overridden
 		Format:        config.LogFormat("json"),
