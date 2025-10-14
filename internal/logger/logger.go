@@ -124,7 +124,7 @@ func (f *LoggerFactory) BuildLoggerForCtx(ctx context.Context, scope string) con
 	return WithContext(ctx, slog.New(h))
 }
 
-// FromContext returns the logger stored in ctx or the factory root.
+// FromCtx returns the logger stored in ctx or the factory root.
 func (f *LoggerFactory) FromCtx(ctx context.Context) *slog.Logger {
 	if lg := retriveLoggerfromCtx(ctx); lg != nil {
 		return lg

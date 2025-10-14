@@ -43,10 +43,10 @@ func main() {
 	ctxSignal := logFactory.BuildLoggerForCtx(ctx, "signal")
 	ctxSfu := logFactory.BuildLoggerForCtx(ctx, "sfu")
 	// Signal not printed due to error level
-	sigLogger := logFactory.FromContext(ctxSignal)
+	sigLogger := logFactory.FromCtx(ctxSignal)
 	sigLogger.InfoContext(ctxSignal, "Start signaling")
 	// Sfu printed due to debug level
-	sfuLogger := logFactory.FromContext(ctxSfu)
+	sfuLogger := logFactory.FromCtx(ctxSfu)
 	sfuLogger.InfoContext(ctxSfu, "Starting SFU")
 
 	fmt.Println(ctxSignal)
