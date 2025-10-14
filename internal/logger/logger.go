@@ -124,7 +124,7 @@ func (f *LoggerFactory) BuildLoggerForCtx(ctx context.Context, scope string) con
 	return WithContext(ctx, slog.New(h))
 }
 
-// FromCtx returns the logger stored in ctx or the factory root.
+// FromCtx returns the logger stored in ctx or the factory root logger.
 func (f *LoggerFactory) FromCtx(ctx context.Context) *slog.Logger {
 	if lg := retriveLoggerfromCtx(ctx); lg != nil {
 		return lg
@@ -134,13 +134,13 @@ func (f *LoggerFactory) FromCtx(ctx context.Context) *slog.Logger {
 }
 
 // RetriveLoggerfromCtx retrieves the logger associated with ctx
-// or returns slog.Default().
+// or returns nil.
 func retriveLoggerfromCtx(ctx context.Context) *slog.Logger {
 	if l, ok := ctx.Value(ctxKey{}).(*slog.Logger); ok && l != nil {
 		return l
 	}
 
-	return slog.Default()
+	return nil
 }
 
 // NewHandler returns a singleton slog.Handler per scope.
