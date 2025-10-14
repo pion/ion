@@ -13,11 +13,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-type LogFormat string
-type WriterType string
+type (
+	LogFormat  string
+	WriterType string
+)
 
-var ErrInvalidWriterType = errors.New("invalid writer type")
-var ErrInvalidFormatType = errors.New("invalid format type")
+var (
+	ErrInvalidWriterType = errors.New("invalid writer type")
+	ErrInvalidFormatType = errors.New("invalid format type")
+)
 
 const (
 	LogFormatText LogFormat  = "text"
