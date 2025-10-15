@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -27,7 +28,9 @@ func TestNewService_RegistersStandardCollectors(t *testing.T) {
 	body := w.Body.String()
 
 	require.Contains(t, body, "go_goroutines")
-	require.Contains(t, body, "process_cpu_seconds_total")
+	if !(runtime.GOOS == "js" || runtime.GOARCH == "wasm") {
+		require.Contains(t, body, "process_cpu_seconds_total")
+	}
 	require.Contains(t, body, "ion_http_requests_total")
 	require.Contains(t, body, "ion_http_request_duration_seconds")
 }
@@ -65,7 +68,9 @@ func TestNewService_With_Middleware(t *testing.T) {
 	body := scr.Body.String()
 
 	require.Contains(t, body, "go_goroutines")
-	require.Contains(t, body, "process_cpu_seconds_total")
+	if !(runtime.GOOS == "js" || runtime.GOARCH == "wasm") {
+		require.Contains(t, body, "process_cpu_seconds_total")
+	}
 
 	require.Contains(t, body, "ion_http_requests_total")
 	require.Contains(t, body, "ion_http_request_duration_seconds_bucket")

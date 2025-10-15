@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/pion/ion/v2/internal/config"
 	"github.com/pion/ion/v2/internal/core"
@@ -36,8 +37,9 @@ func main() {
 				Mode: "none", User: "", Pass: "", Token: "",
 			})))
 		srv := &http.Server{
-			Addr:    cfg.Telemetry.Metrics.Prometheus.Addr,
-			Handler: mux,
+			Addr:              cfg.Telemetry.Metrics.Prometheus.Addr,
+			Handler:           mux,
+			ReadHeaderTimeout: time.Second,
 		}
 		_ = srv.ListenAndServe()
 	}
