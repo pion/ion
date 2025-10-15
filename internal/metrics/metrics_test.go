@@ -28,7 +28,7 @@ func TestNewService_RegistersStandardCollectors(t *testing.T) {
 	body := w.Body.String()
 
 	require.Contains(t, body, "go_goroutines")
-	if !(runtime.GOOS == "js" || runtime.GOARCH == "wasm") {
+	if runtime.GOOS != "js" && runtime.GOARCH != "wasm" {
 		require.Contains(t, body, "process_cpu_seconds_total")
 	}
 	require.Contains(t, body, "ion_http_requests_total")
@@ -68,7 +68,7 @@ func TestNewService_With_Middleware(t *testing.T) {
 	body := scr.Body.String()
 
 	require.Contains(t, body, "go_goroutines")
-	if !(runtime.GOOS == "js" || runtime.GOARCH == "wasm") {
+	if runtime.GOOS != "js" && runtime.GOARCH != "wasm" {
 		require.Contains(t, body, "process_cpu_seconds_total")
 	}
 
