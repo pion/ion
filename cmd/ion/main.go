@@ -5,10 +5,12 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/pion/ion/v2/internal/config"
 	"github.com/pion/ion/v2/internal/core"
+	"github.com/pion/ion/v2/internal/metrics"
 	"github.com/spf13/pflag"
 )
 
@@ -25,4 +27,18 @@ func main() {
 	fmt.Printf("TRACE OTLP: service name=%s\n", cfg.Telemetry.Traces.OTLP.ServiceName)
 
 	fmt.Println(core.HelloWorld())
+
+	mux := http.NewServeMux()
+	if cfg.Telemetry.Metrics.Prometheus.Enabled {
+		m := metrics.NewPromService(metrics.Options{Namespace: "ion"})
+		mux.Handle("/metrics", m.HTTPMiddleware("metrics",
+			m.Handler(metrics.Auth{
+				Mode: "none", User: "", Pass: "", Token: "",
+			})))
+		srv := &http.Server{
+			Addr:    cfg.Telemetry.Metrics.Prometheus.Addr,
+			Handler: mux,
+		}
+		_ = srv.ListenAndServe()
+	}
 }
