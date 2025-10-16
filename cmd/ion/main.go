@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"github.com/pion/ion/v2/internal/config"
 	"github.com/pion/ion/v2/internal/core"
 	"github.com/pion/ion/v2/internal/metrics"
+	"github.com/pion/ion/v2/internal/logger"
 	"github.com/spf13/pflag"
 )
 
@@ -26,7 +28,31 @@ func main() {
 	fmt.Printf("LOG: level=%s format=%s\n", cfg.Telemetry.Logs.Level, cfg.Telemetry.Logs.Format)
 	fmt.Printf("METRICS PROMETHEUS: addr=%s\n", cfg.Telemetry.Metrics.Prometheus.Addr)
 	fmt.Printf("TRACE OTLP: service name=%s\n", cfg.Telemetry.Traces.OTLP.ServiceName)
+	logFactory, err := logger.NewLoggerFactory(
+		logger.Options{
+			DefaultWriter: config.WriterStderr,
+			Format:        config.LogFormatText,
+			ScopeLevels: map[string]string{
+				"sfu":    "debug",
+				"signal": "error",
+			},
+			DefaultLevel: "debug",
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+	ctx := context.Background()
+	ctxSignal := logFactory.BuildLoggerForCtx(ctx, "signal")
+	ctxSfu := logFactory.BuildLoggerForCtx(ctx, "sfu")
+	// Signal not printed due to error level
+	sigLogger := logFactory.FromCtx(ctxSignal)
+	sigLogger.InfoContext(ctxSignal, "Start signaling")
+	// Sfu printed due to debug level
+	sfuLogger := logFactory.FromCtx(ctxSfu)
+	sfuLogger.InfoContext(ctxSfu, "Starting SFU")
 
+	fmt.Println(ctxSignal)
 	fmt.Println(core.HelloWorld())
 
 	mux := http.NewServeMux()

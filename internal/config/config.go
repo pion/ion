@@ -5,6 +5,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -12,11 +13,21 @@ import (
 	"github.com/spf13/viper"
 )
 
-type LogFormat string
+type (
+	LogFormat  string
+	WriterType string
+)
+
+var (
+	ErrInvalidWriterType = errors.New("invalid writer type")
+	ErrInvalidFormatType = errors.New("invalid format type")
+)
 
 const (
-	LogFormatText LogFormat = "text"
-	LogFormatJSON LogFormat = "json"
+	LogFormatText LogFormat  = "text"
+	LogFormatJSON LogFormat  = "json"
+	WriterStderr  WriterType = "stderr"
+	WriterStdout  WriterType = "stdout"
 )
 
 const (
