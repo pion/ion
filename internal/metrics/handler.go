@@ -11,20 +11,50 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-type Auth struct {
-	Mode       string // "none"|"basic"|"bearer"
-	User, Pass string
-	Token      string
+type authMode int
+
+const (
+	modeNone authMode = iota
+	modeBasic
+	modeBearer
+)
+
+type authConfig struct {
+	mode       authMode
+	user, pass string
+	token      string
 }
 
-// Handler returns a http handler wrapped with authentication.
-func (s *PromService) Handler(auth Auth) http.Handler {
+type Option func(*authConfig)
+
+func WithBasicAuth(user, pass string) Option {
+	return func(c *authConfig) {
+		c.mode = modeBasic
+		c.user = user
+		c.pass = pass
+	}
+}
+
+func WithBearerToken(token string) Option {
+	return func(c *authConfig) {
+		c.mode = modeBearer
+		c.token = token
+	}
+}
+
+func (s *PromService) Handler(opts ...Option) http.Handler {
+	cfg := authConfig{mode: modeNone}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	h := promhttp.HandlerFor(s.reg, promhttp.HandlerOpts{})
-	switch auth.Mode {
-	case "basic":
-		return basicAuth(h, auth.User, auth.Pass)
-	case "bearer":
-		return bearerAuth(h, auth.Token)
+
+	switch cfg.mode {
+	case modeBasic:
+		return basicAuth(h, cfg.user, cfg.pass)
+	case modeBearer:
+		return bearerAuth(h, cfg.token)
 	default:
 		return h
 	}
