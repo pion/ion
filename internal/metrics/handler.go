@@ -20,9 +20,10 @@ const (
 )
 
 type authConfig struct {
-	mode       authMode
-	user, pass string
-	token      string
+	user  string
+	pass  string
+	token string
+	mode  authMode
 }
 
 type Option func(*authConfig)

@@ -37,7 +37,7 @@ func TestNewService_RegistersStandardCollectors(t *testing.T) {
 
 func TestHandler_NoAuth_ServesMetrics(t *testing.T) {
 	s := NewPromService(Options{Namespace: "ion"})
-	h := s.Handler(Auth{Mode: "none"})
+	h := s.Handler()
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/metrics", nil)
@@ -63,7 +63,7 @@ func TestNewService_With_Middleware(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 
 	scr := httptest.NewRecorder()
-	service.Handler(Auth{Mode: "none"}).ServeHTTP(scr, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	service.Handler().ServeHTTP(scr, httptest.NewRequest(http.MethodGet, "/metrics", nil))
 	require.Equal(t, http.StatusOK, scr.Code)
 	body := scr.Body.String()
 
