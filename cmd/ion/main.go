@@ -6,11 +6,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/pion/ion/v2/internal/config"
 	"github.com/pion/ion/v2/internal/core"
 	"github.com/pion/ion/v2/internal/logger"
+	"github.com/pion/ion/v2/internal/metrics"
 	"github.com/spf13/pflag"
 )
 
@@ -51,4 +54,17 @@ func main() {
 
 	fmt.Println(ctxSignal)
 	fmt.Println(core.HelloWorld())
+
+	mux := http.NewServeMux()
+	if cfg.Telemetry.Metrics.Prometheus.Enabled {
+		m := metrics.NewPromService(metrics.Options{Namespace: "ion"})
+		mux.Handle("/metrics", m.HTTPMiddleware("metrics",
+			m.Handler()))
+		srv := &http.Server{
+			Addr:              cfg.Telemetry.Metrics.Prometheus.Addr,
+			Handler:           mux,
+			ReadHeaderTimeout: time.Second,
+		}
+		_ = srv.ListenAndServe()
+	}
 }
