@@ -4,7 +4,6 @@
 package logger
 
 import (
-	"bytes"
 	"context"
 	"log/slog"
 	"strings"
@@ -22,9 +21,9 @@ func TestImplementsLeveledLogger(t *testing.T) {
 	var _ pionLogging.LeveledLogger = (*PionAdaptorLogger)(nil)
 }
 
-func newBufferedAdaptor(t *testing.T, minLevel slog.Level) (*PionAdaptorLogger, *bytes.Buffer) {
+func newBufferedAdaptor(t *testing.T, minLevel slog.Level) (*PionAdaptorLogger, *SafeBuffer) {
 	t.Helper()
-	var buf bytes.Buffer
+	var buf SafeBuffer
 	h := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: minLevel})
 	l := slog.New(h)
 
@@ -136,7 +135,7 @@ func TestInfoLevel(t *testing.T)    { testInfoLevel(t) }
 func TestAllLevels(t *testing.T)    { testAllLevels(t) }
 
 func TestTwoPeers_DistinctLoggerFieldsSingleProcess(t *testing.T) {
-	var bufA, bufB bytes.Buffer
+	var bufA, bufB SafeBuffer
 
 	lfA, err := NewLoggerFactory(Options{
 		DefaultLevel:  "debug",
@@ -228,7 +227,7 @@ func TestTwoPeers_DistinctLoggerFieldsSingleProcess(t *testing.T) {
 }
 
 // helper to build a dynamicAttrsHandler with a JSON next handler writing to buf.
-func newDynamicHandler(buf *bytes.Buffer) *dynamicAttrsHandler {
+func newDynamicHandler(buf *SafeBuffer) *dynamicAttrsHandler {
 	base := slog.NewJSONHandler(buf, &slog.HandlerOptions{}) // deterministic JSON
 
 	return &dynamicAttrsHandler{
@@ -238,7 +237,7 @@ func newDynamicHandler(buf *bytes.Buffer) *dynamicAttrsHandler {
 }
 
 func TestDynamicAttrsHandler_WithAttrs(t *testing.T) {
-	var buf bytes.Buffer
+	var buf SafeBuffer
 	dh := newDynamicHandler(&buf)
 
 	// Call WithAttrs to add a static attribute
@@ -259,7 +258,7 @@ func TestDynamicAttrsHandler_WithAttrs(t *testing.T) {
 }
 
 func TestDynamicAttrsHandler_WithGroup(t *testing.T) {
-	var buf bytes.Buffer
+	var buf SafeBuffer
 	dh := newDynamicHandler(&buf)
 
 	hGrouped := dh.WithGroup("conn")

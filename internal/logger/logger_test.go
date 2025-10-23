@@ -8,12 +8,37 @@ import (
 	"context"
 	"log/slog"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/pion/ion/v2/internal/config"
 	"github.com/stretchr/testify/require"
 )
 
+type SafeBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (s *SafeBuffer) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.Write(p)
+}
+func (s *SafeBuffer) Sync() error { return nil }
+
+// Helper for tests:
+func (s *SafeBuffer) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.String()
+}
+
+func (s *SafeBuffer) Len() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.Len()
+}
 func TestBuildWriteSyncer(t *testing.T) {
 	t.Run("stdout", func(t *testing.T) {
 		ws, err := BuildWriteSyncer(config.WriterStdout)
@@ -82,7 +107,7 @@ func TestNewLoggerFactory(t *testing.T) {
 }
 
 func TestScopeLevelAndModuleAttr(t *testing.T) {
-	var buf bytes.Buffer
+	var buf SafeBuffer
 
 	opts := Options{
 		DefaultLevel:  "info", // debug should be dropped unless overridden
@@ -149,7 +174,7 @@ func TestWithContextAndFromCtx(t *testing.T) {
 	require.NoError(t, err)
 
 	// Put a custom logger into context and ensure FromCtx returns it.
-	buf := &bytes.Buffer{}
+	buf := &SafeBuffer{}
 	custom := slog.New(slog.NewTextHandler(buf, nil))
 	ctx := WithContext(context.Background(), custom)
 
@@ -167,7 +192,7 @@ func TestRetriveLoggerfromCtx_Default(t *testing.T) {
 }
 
 // helper: build a ctxHandler wrapping a JSON handler that writes to buf.
-func newCtxHandler(buf *bytes.Buffer, scope string) *ctxHandler {
+func newCtxHandler(buf *SafeBuffer, scope string) *ctxHandler {
 	base := slog.NewJSONHandler(buf, &slog.HandlerOptions{}) // deterministic JSON
 
 	return &ctxHandler{
@@ -177,7 +202,7 @@ func newCtxHandler(buf *bytes.Buffer, scope string) *ctxHandler {
 }
 
 func TestCtxHandler_WithAttrs(t *testing.T) {
-	var buf bytes.Buffer
+	var buf SafeBuffer
 	h := newCtxHandler(&buf, "sfu")
 
 	// Derive with static attrs
@@ -209,7 +234,7 @@ func TestCtxHandler_WithAttrs(t *testing.T) {
 }
 
 func TestCtxHandler_WithGroup_PreservesScopeAndNestsAttrs(t *testing.T) {
-	var buf bytes.Buffer
+	var buf SafeBuffer
 	h := newCtxHandler(&buf, "auth")
 
 	// Derive grouped handler
