@@ -16,29 +16,33 @@ import (
 )
 
 type SafeBuffer struct {
-	mu sync.Mutex
 	b  bytes.Buffer
+	mu sync.Mutex
 }
 
 func (s *SafeBuffer) Write(p []byte) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	return s.b.Write(p)
 }
 func (s *SafeBuffer) Sync() error { return nil }
 
-// Helper for tests:
+// Helper for tests:.
 func (s *SafeBuffer) String() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	return s.b.String()
 }
 
 func (s *SafeBuffer) Len() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	return s.b.Len()
 }
+
 func TestBuildWriteSyncer(t *testing.T) {
 	t.Run("stdout", func(t *testing.T) {
 		ws, err := BuildWriteSyncer(config.WriterStdout)
