@@ -6,15 +6,42 @@ package logger
 import (
 	"bytes"
 	"context"
-	"io"
 	"log/slog"
-	"os"
-	"runtime"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/pion/ion/v2/internal/config"
 	"github.com/stretchr/testify/require"
 )
+
+type SafeBuffer struct {
+	b  bytes.Buffer
+	mu sync.Mutex
+}
+
+func (s *SafeBuffer) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.b.Write(p)
+}
+func (s *SafeBuffer) Sync() error { return nil }
+
+// Helper for tests:.
+func (s *SafeBuffer) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.b.String()
+}
+
+func (s *SafeBuffer) Len() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.b.Len()
+}
 
 func TestBuildWriteSyncer(t *testing.T) {
 	t.Run("stdout", func(t *testing.T) {
@@ -83,50 +110,36 @@ func TestNewLoggerFactory(t *testing.T) {
 	require.NotNil(t, f.rootLogger)
 }
 
-// NOTE: Build the factory *inside* this capture so zap binds to the pipe.
-func captureStdout(fn func()) string {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	fn()
-	_ = w.Close()
-	os.Stdout = old
-	b, _ := io.ReadAll(r)
-	_ = r.Close()
-
-	return string(b)
-}
-
 func TestScopeLevelAndModuleAttr(t *testing.T) {
-	if runtime.GOOS == "js" {
-		t.Skip("stdout/stderr capture not supported under js/wasm; skip")
-	}
+	var buf SafeBuffer
+
 	opts := Options{
 		DefaultLevel:  "info", // debug should be dropped unless overridden
 		Format:        config.LogFormat("json"),
-		DefaultWriter: config.WriterStdout,
+		DefaultWriter: config.WriterStdout, // ignored due to TestWriter
+		TestWriter:    &buf,
 		ScopeLevels: map[string]string{
 			"sfu": "debug", // override for this scope only
 		},
 	}
 
-	out := captureStdout(func() {
-		f, err := NewLoggerFactory(opts)
-		require.NoError(t, err)
+	f, err := NewLoggerFactory(opts)
+	require.NoError(t, err)
 
-		// Scope with debug level enabled.
-		ctx := f.BuildLoggerForCtx(context.Background(), "sfu")
-		l1 := f.FromCtx(ctx)
-		l1.Debug("sfu-debug", slog.String("k", "v"))
+	// Scope with debug level enabled.
+	ctx := f.BuildLoggerForCtx(context.Background(), "sfu")
+	l1 := f.FromCtx(ctx)
+	l1.Debug("sfu-debug", slog.String("k", "v"))
 
-		// Scope without override should drop debug at default info level.
-		ctx2 := f.BuildLoggerForCtx(context.Background(), "other")
-		l2 := f.FromCtx(ctx2)
-		l2.Debug("drop-me", slog.String("x", "y"))
+	// Scope without override should drop debug at default info level.
+	ctx2 := f.BuildLoggerForCtx(context.Background(), "other")
+	l2 := f.FromCtx(ctx2)
+	l2.Debug("drop-me", slog.String("x", "y"))
 
-		// Emit an info from "other" to ensure we get at least one record from it.
-		l2.Info("visible-info")
-	})
+	// Emit an info from "other" to ensure we get at least one record from it.
+	l2.Info("visible-info")
+
+	out := buf.String()
 
 	// Should include the debug message and module tag for "sfu".
 	require.Contains(t, out, `"msg":"sfu-debug"`, "expected debug message for sfu")
@@ -165,7 +178,7 @@ func TestWithContextAndFromCtx(t *testing.T) {
 	require.NoError(t, err)
 
 	// Put a custom logger into context and ensure FromCtx returns it.
-	buf := &bytes.Buffer{}
+	buf := &SafeBuffer{}
 	custom := slog.New(slog.NewTextHandler(buf, nil))
 	ctx := WithContext(context.Background(), custom)
 
@@ -180,4 +193,84 @@ func TestWithContextAndFromCtx(t *testing.T) {
 func TestRetriveLoggerfromCtx_Default(t *testing.T) {
 	l := retriveLoggerfromCtx(context.Background())
 	require.Nil(t, l, "expected nil when context has no logger")
+}
+
+// helper: build a ctxHandler wrapping a JSON handler that writes to buf.
+func newCtxHandler(buf *SafeBuffer, scope string) *ctxHandler {
+	base := slog.NewJSONHandler(buf, &slog.HandlerOptions{}) // deterministic JSON
+
+	return &ctxHandler{
+		next:  base,
+		scope: scope,
+	}
+}
+
+func TestCtxHandler_WithAttrs(t *testing.T) {
+	var buf SafeBuffer
+	h := newCtxHandler(&buf, "sfu")
+
+	// Derive with static attrs
+	h2 := h.WithAttrs([]slog.Attr{
+		slog.String("role", "offerer"),
+	})
+	require.IsType(t, &ctxHandler{}, h2)
+	derived, ok := h2.(*ctxHandler)
+	require.True(t, ok, "expected *ctxHandler, got %T", h2)
+
+	// Scope must be preserved
+	require.Equal(t, "sfu", derived.scope)
+	require.Equal(t, h.scope, derived.scope)
+
+	// Log through derived handler
+	logger := slog.New(derived)
+	logger.Info("hello", slog.String("k", "v"))
+
+	out := buf.String()
+
+	// Scope (module) stays at top level
+	require.Contains(t, out, `"module":"sfu"`, "module should remain at top level")
+
+	// Static attributes from WithAttrs are present
+	require.Contains(t, out, `"role":"offerer"`)
+	require.Contains(t, out, `"k":"v"`)
+	require.Contains(t, out, `"msg":"hello"`)
+	require.Contains(t, out, `"level":"INFO"`)
+}
+
+func TestCtxHandler_WithGroup_PreservesScopeAndNestsAttrs(t *testing.T) {
+	var buf SafeBuffer
+	h := newCtxHandler(&buf, "auth")
+
+	// Derive grouped handler
+	hg := h.WithGroup("conn")
+	require.IsType(t, &ctxHandler{}, hg)
+	g, ok := hg.(*ctxHandler)
+	require.True(t, ok, "expected *ctxHandler, got %T", hg)
+
+	// Scope must be preserved
+	require.Equal(t, "auth", g.scope)
+
+	// Log grouped fields
+	logger := slog.New(g)
+	logger.Info("state-change",
+		slog.String("state", "open"),
+		slog.Int("retries", 0),
+	)
+
+	out := buf.String()
+
+	// Scope (module) remains at top level
+	require.Contains(t, out, `"module":"auth"`)
+
+	// Grouped fields appear nested under "conn"
+	require.Contains(t, out, `"conn":{`)
+	require.Contains(t, out, `"state":"open"`)
+	require.Contains(t, out, `"retries":0`)
+
+	// Message/level present
+	require.Contains(t, out, `"msg":"state-change"`)
+	require.Contains(t, out, `"level":"INFO"`)
+
+	// Sanity: ensure "state" only appears as grouped (not top-level leak)
+	require.Equal(t, 1, strings.Count(out, `"state":"open"`))
 }

@@ -7,6 +7,7 @@ package logger
 
 import (
 	"context"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -21,9 +22,10 @@ import (
 type ctxKey struct{}
 
 type Options struct {
+	TestWriter    io.Writer
+	ScopeLevels   map[string]string
 	DefaultLevel  string
 	Format        config.LogFormat
-	ScopeLevels   map[string]string
 	DefaultWriter config.WriterType
 }
 
@@ -82,6 +84,10 @@ func NewLoggerFactory(opts Options) (*LoggerFactory, error) {
 	ws, err := BuildWriteSyncer(opts.DefaultWriter)
 	if err != nil {
 		return nil, err
+	}
+
+	if opts.TestWriter != nil {
+		ws = zapcore.AddSync(opts.TestWriter)
 	}
 
 	encoder, err := BuildEncoder(opts.Format)
