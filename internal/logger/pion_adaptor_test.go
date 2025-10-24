@@ -9,7 +9,6 @@ package logger
 import (
 	"context"
 	"log/slog"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -139,9 +138,6 @@ func TestInfoLevel(t *testing.T)    { testInfoLevel(t) }
 func TestAllLevels(t *testing.T)    { testAllLevels(t) }
 
 func TestTwoPeers_DistinctLoggerFieldsSingleProcess(t *testing.T) {
-	if runtime.GOARCH == "wasm" || runtime.GOOS == "js" {
-		t.Skip("Pion logger factory not available on wasm")
-	}
 	var bufA, bufB SafeBuffer
 
 	lfA, err := NewLoggerFactory(Options{
