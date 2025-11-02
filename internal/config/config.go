@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	ionICE "github.com/pion/ion/v2/internal/ice"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -77,6 +78,7 @@ type TelemetryConfig struct {
 }
 
 type Config struct {
+	ICE       ionICE.ICEConfig
 	Telemetry TelemetryConfig `mapstructure:"telemetry"`
 }
 
@@ -106,6 +108,7 @@ func DefaultConfig() Config {
 				},
 			},
 		},
+		ICE: ionICE.DefaultICEConfig(),
 	}
 }
 
@@ -142,6 +145,29 @@ func RegisterFlags(fs *pflag.FlagSet) {
 		"OTLP traces endpoint (e.g. host:4317)")
 	fs.Float64("telemetry.traces.otlp.sample_ratio", def.Telemetry.Traces.OTLP.SampleRatio,
 		"Tracing sampler ratio in [0.0,1.0]")
+
+	// ice.stun
+	fs.Bool("ice.stun.enabled", def.ICE.STUN.Enabled, "Enable embedded STUN server")
+	fs.String("ice.stun.udp_endpoint", def.ICE.STUN.UDPEndpoint, "STUN UDP bind (host:port or :port)")
+	fs.String("ice.stun.tcp_endpoint", def.ICE.STUN.TCPEndpoint, "STUN TCP bind (host:port or :port)")
+
+	// ice.turn
+	fs.Bool("ice.turn.enabled", def.ICE.TURN.Enabled, "Enable embedded TURN server")
+	fs.String("ice.turn.udp_endpoint", def.ICE.TURN.UDPEndpoint, "TURN UDP bind (host:port or :port)")
+	fs.String("ice.turn.tcp_endpoint", def.ICE.TURN.TCPEndpoint, "TURN TCP bind (host:port or :port)")
+	fs.String("ice.turn.public_ip", def.ICE.TURN.PublicIP, "Public IP return to TURN client")
+	fs.String("ice.turn.realm", def.ICE.TURN.Realm, "TURN realm")
+	fs.String("ice.turn.auth", def.ICE.TURN.Auth, "TURN auth mode (e.g. 'long-term'|'shared-secret')")
+	fs.String("ice.turn.user", def.ICE.TURN.User, "TURN static username (for long-term auth)")
+	fs.String("ice.turn.password", def.ICE.TURN.Password, "TURN static password (for long-term auth)")
+	fs.String("ice.turn.secret", def.ICE.TURN.Secret, "TURN shared secret (for time-limited creds)")
+	fs.Uint16("ice.turn.port_range_min", def.ICE.TURN.PortRangeMin, "TURN min port range")
+	fs.Uint16("ice.turn.port_range_max", def.ICE.TURN.PortRangeMin, "TURN max port range")
+
+	// ice.turn.tls
+	fs.String("ice.turn.tls.endpoint", def.ICE.TURN.TLS.Endpoint, "TURN TLS bind (host:port or :port)")
+	fs.String("ice.turn.tls.cert", def.ICE.TURN.TLS.Cert, "TURN TLS certificate file path")
+	fs.String("ice.turn.tls.key", def.ICE.TURN.TLS.Key, "TURN TLS private key file path")
 }
 
 // Load returns config struct for ION.
@@ -163,6 +189,22 @@ func Load(fs *pflag.FlagSet) (Config, error) {
 	vp.SetDefault("telemetry.traces.otlp.service_name", cfg.Telemetry.Traces.OTLP.ServiceName)
 	vp.SetDefault("telemetry.traces.otlp.endpoint", cfg.Telemetry.Traces.OTLP.Endpoint)
 	vp.SetDefault("telemetry.traces.otlp.sample_ratio", cfg.Telemetry.Traces.OTLP.SampleRatio)
+
+	vp.SetDefault("ice.stun.enabled", cfg.ICE.STUN.Enabled)
+	vp.SetDefault("ice.stun.udp_endpoint", cfg.ICE.STUN.UDPEndpoint)
+	vp.SetDefault("ice.stun.tcp_endpoint", cfg.ICE.STUN.TCPEndpoint)
+
+	vp.SetDefault("ice.turn.enabled", cfg.ICE.TURN.Enabled)
+	vp.SetDefault("ice.turn.udp_endpoint", cfg.ICE.TURN.UDPEndpoint)
+	vp.SetDefault("ice.turn.tcp_endpoint", cfg.ICE.TURN.TCPEndpoint)
+	vp.SetDefault("ice.turn.public_ip", (cfg.ICE.TURN.PublicIP))
+	vp.SetDefault("ice.turn.realm", cfg.ICE.TURN.Realm)
+	vp.SetDefault("ice.turn.auth", cfg.ICE.TURN.Auth)
+	vp.SetDefault("ice.turn.user", cfg.ICE.TURN.User)
+	vp.SetDefault("ice.turn.password", cfg.ICE.TURN.Password)
+	vp.SetDefault("ice.turn.secret", cfg.ICE.TURN.Secret)
+	vp.SetDefault("ice.turn.port_range_min", (cfg.ICE.TURN.PortRangeMin))
+	vp.SetDefault("ice.turn.port_range_max", (cfg.ICE.TURN.PortRangeMax))
 
 	// Env
 	vp.SetEnvPrefix("ION")
