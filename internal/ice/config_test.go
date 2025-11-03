@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025 The Pion community
+// SPDX-License-Identifier: MIT
 package ice
 
 import (
