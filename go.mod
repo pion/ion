@@ -2,7 +2,7 @@ module github.com/pion/ion/v2
 
 go 1.24.0
 
-toolchain go1.24.4
+toolchain go1.25.4
 
 require (
 	github.com/pion/webrtc/v4 v4.1.6
