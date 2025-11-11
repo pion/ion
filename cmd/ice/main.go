@@ -323,7 +323,7 @@ func setupTLSEndpoint(
 
 	tlsLn := tls.NewListener(baseLn, &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12,
+		MinVersion:   tlsCfg.Version,
 	})
 
 	// Add to closer stack only after everything succeeded.
@@ -338,7 +338,7 @@ func setupTLSEndpoint(
 // makeRelay returns the RelayAddressGenerator for configuration.
 func makeRelay(cfg ionICE.TURNConfig) turn.RelayAddressGenerator {
 	return &turn.RelayAddressGeneratorPortRange{
-		Address:      "0.0.0.0",
+		Address:      cfg.Address,
 		MinPort:      cfg.PortRangeMin,
 		MaxPort:      cfg.PortRangeMax,
 		RelayAddress: net.ParseIP(cfg.PublicIP),

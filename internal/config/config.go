@@ -163,11 +163,13 @@ func RegisterFlags(fs *pflag.FlagSet) {
 	fs.String("ice.turn.secret", def.ICE.TURN.Secret, "TURN shared secret (for time-limited creds)")
 	fs.Uint16("ice.turn.port_range_min", def.ICE.TURN.PortRangeMin, "TURN min port range")
 	fs.Uint16("ice.turn.port_range_max", def.ICE.TURN.PortRangeMin, "TURN max port range")
+	fs.String("ice.turn.address", def.ICE.TURN.Address, "TURN address")
 
 	// ice.turn.tls
 	fs.String("ice.turn.tls.endpoint", def.ICE.TURN.TLS.Endpoint, "TURN TLS bind (host:port or :port)")
 	fs.String("ice.turn.tls.cert", def.ICE.TURN.TLS.Cert, "TURN TLS certificate file path")
 	fs.String("ice.turn.tls.key", def.ICE.TURN.TLS.Key, "TURN TLS private key file path")
+	fs.Uint16("ice.turn.tls.version", def.ICE.TURN.TLS.Version, "TURN TLS version")
 }
 
 // Load returns config struct for ION.
@@ -205,6 +207,11 @@ func Load(fs *pflag.FlagSet) (Config, error) {
 	vp.SetDefault("ice.turn.secret", cfg.ICE.TURN.Secret)
 	vp.SetDefault("ice.turn.port_range_min", (cfg.ICE.TURN.PortRangeMin))
 	vp.SetDefault("ice.turn.port_range_max", (cfg.ICE.TURN.PortRangeMax))
+	vp.SetDefault("ice.turn.address", (cfg.ICE.TURN.Address))
+	vp.SetDefault("ice.turn.tls.endpoint", (cfg.ICE.TURN.TLS.Endpoint))
+	vp.SetDefault("ice.turn.tls.cert", (cfg.ICE.TURN.TLS.Cert))
+	vp.SetDefault("ice.turn.tls.key", (cfg.ICE.TURN.TLS.Key))
+	vp.SetDefault("ice.turn.tls.version", (cfg.ICE.TURN.TLS.Version))
 
 	// Env
 	vp.SetEnvPrefix("ION")

@@ -46,15 +46,16 @@ type STUNConfig struct {
 }
 
 type TURNConfig struct {
-	TLS          TLSConfig `mapstructure:"tls"`
+	User         string    `mapstructure:"user"`
 	UDPEndpoint  string    `mapstructure:"udp_endpoint"`
 	TCPEndpoint  string    `mapstructure:"tcp_endpoint"`
 	PublicIP     string    `mapstructure:"public_ip"`
 	Realm        string    `mapstructure:"realm"`
 	Auth         string    `mapstructure:"auth"`
-	User         string    `mapstructure:"user"`
 	Password     string    `mapstructure:"password"`
 	Secret       string    `mapstructure:"secret"`
+	Address      string    `mapstructure:"address"`
+	TLS          TLSConfig `mapstructure:"tls"`
 	PortRangeMin uint16    `mapstructure:"port_range_min"`
 	PortRangeMax uint16    `mapstructure:"port_range_max"`
 	Enabled      bool
@@ -64,6 +65,7 @@ type TLSConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 	Cert     string `mapstructure:"cert"`
 	Key      string `mapstructure:"key"`
+	Version  uint16 `mapstructure:"version"`
 }
 
 func DefaultICEConfig() ICEConfig {
@@ -79,6 +81,7 @@ func DefaultICEConfig() ICEConfig {
 			TCPEndpoint:  ":3478",
 			PublicIP:     "",
 			Realm:        "ion",
+			Address:      "0.0.0.0",
 			PortRangeMin: DefaultPortRangeMin,
 			PortRangeMax: DefaultPortRangeMax,
 		},
