@@ -8,10 +8,8 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"os"
 	"os/signal"
@@ -24,8 +22,6 @@ import (
 	"github.com/pion/turn/v4"
 	"github.com/spf13/pflag"
 )
-
-var errMissingTLSKeyPair = errors.New("turn.tls enabled but cert/key not provided")
 
 func main() {
 	config.RegisterFlags(pflag.CommandLine)
@@ -255,7 +251,7 @@ func startTURNSTUNServer( //nolint:cyclop
 	// TLS
 	if tlsAddr != "" {
 		lgr.Info(fmt.Sprintf("TURN TLS endpoint on %s (realm=%s)", tlsAddr, realm))
-		lnConf, errTLS := setupTLSEndpoint(ctx, lc, tlsAddr, cfg.TURN.TLS, relayGen, lgr, &closers)
+		lnConf, errTLS := setupTLSEndpoint(ctx, lc, tlsAddr, cfg.TURN.TLS, relayGen, &closers)
 		if errTLS != nil {
 			lgr.Error(errTLS.Error())
 			closers.CloseAll()
@@ -300,15 +296,8 @@ func setupTLSEndpoint(
 	tlsAddr string,
 	tlsCfg ionICE.TLSConfig,
 	relayGen turn.RelayAddressGenerator,
-	lgr *slog.Logger,
 	closers *closerStack,
 ) (turn.ListenerConfig, error) {
-	if tlsCfg.Cert == "" || tlsCfg.Key == "" {
-		lgr.Error(errMissingTLSKeyPair.Error())
-
-		return turn.ListenerConfig{}, errMissingTLSKeyPair
-	}
-
 	baseLn, err := lc.Listen(ctx, "tcp", tlsAddr)
 	if err != nil {
 		return turn.ListenerConfig{}, fmt.Errorf("tls listen %q: %w", tlsAddr, err)
@@ -320,10 +309,12 @@ func setupTLSEndpoint(
 
 		return turn.ListenerConfig{}, fmt.Errorf("load tls cert: %w", err)
 	}
+	tlsVerison := tlsCfg.GetTLSVersion()
 
+	//nolint:gosec // G402 goes below 1.2 only when user force it
 	tlsLn := tls.NewListener(baseLn, &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		MinVersion:   tlsCfg.Version,
+		MinVersion:   tlsVerison,
 	})
 
 	// Add to closer stack only after everything succeeded.

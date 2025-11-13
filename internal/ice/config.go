@@ -6,7 +6,9 @@ package ice
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -33,6 +35,14 @@ const (
 	DefaultPortRangeMin = 50000
 	DefaultPortRangeMax = 52000
 )
+
+// nolint: gochecknoglobals
+var tlsVersionMap = map[string]uint16{
+	"TLS10": tls.VersionTLS10,
+	"TLS11": tls.VersionTLS11,
+	"TLS12": tls.VersionTLS12,
+	"TLS13": tls.VersionTLS13,
+}
 
 type ICEConfig struct {
 	STUN STUNConfig `mapstructure:"stun"`
@@ -65,7 +75,7 @@ type TLSConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 	Cert     string `mapstructure:"cert"`
 	Key      string `mapstructure:"key"`
-	Version  uint16 `mapstructure:"version"`
+	Version  string `mapstructure:"version"`
 }
 
 func DefaultICEConfig() ICEConfig {
@@ -82,6 +92,8 @@ func DefaultICEConfig() ICEConfig {
 			PublicIP:     "",
 			Realm:        "ion",
 			Address:      "0.0.0.0",
+			User:         "ion-user",
+			Password:     "ion-pwd",
 			PortRangeMin: DefaultPortRangeMin,
 			PortRangeMax: DefaultPortRangeMax,
 		},
@@ -205,6 +217,15 @@ func (cfg *ICEConfig) TURNSTUNEndpoint(network networkType) (string, error) {
 	}
 }
 
+func (s *TLSConfig) GetTLSVersion() uint16 {
+	if s.Version == "" {
+		return tls.VersionTLS12
+	}
+	v := tlsVersionMap[strings.ToUpper(s.Version)]
+
+	return v
+}
+
 func sameAddr(s1, s2 string) (bool, error) {
 	if s1 == "" || s2 == "" {
 		return false, nil
@@ -265,4 +286,136 @@ func dnsOverlap(h1, h2 string) (bool, error) {
 
 func isWildcardHost(h string) bool {
 	return h == "" || h == "0.0.0.0" || h == "::"
+}
+
+// Validate detects illegal ICE config.
+func (cfg *ICEConfig) Validate() error {
+	mode := cfg.ICEMode()
+	if mode == Disabled {
+		return nil
+	}
+
+	// STUN validation.
+	if cfg.STUN.Enabled {
+		if cfg.STUN.UDPEndpoint == "" && cfg.STUN.TCPEndpoint == "" {
+			return errEmptySTUNEndpoint
+		}
+		if err := validateEndpoint(cfg.STUN.UDPEndpoint); err != nil {
+			return err
+		}
+		if err := validateEndpoint(cfg.STUN.TCPEndpoint); err != nil {
+			return err
+		}
+	}
+
+	// TURN validation.
+	if cfg.TURN.Enabled {
+		if err := validateTURN(&cfg.TURN); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// nolint:cyclop
+func validateTURN(cfg *TURNConfig) error {
+	// At least one transport (UDP/TCP/TLS) must be configured.
+	if cfg.UDPEndpoint == "" && cfg.TCPEndpoint == "" && cfg.TLS.Endpoint == "" {
+		return errEmptyTURNEndpoint
+	}
+
+	if err := validateEndpoint(cfg.UDPEndpoint); err != nil {
+		return err
+	}
+	if err := validateEndpoint(cfg.TCPEndpoint); err != nil {
+		return err
+	}
+	if err := validateEndpoint(cfg.TLS.Endpoint); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(cfg.Realm) == "" {
+		return errEmptyRealm
+	}
+
+	if err := validatePortRange(cfg.PortRangeMin, cfg.PortRangeMax); err != nil {
+		return err
+	}
+
+	if err := validateTURNAuth(cfg); err != nil {
+		return err
+	}
+
+	if err := validateTLSConfig(&cfg.TLS); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateEndpoint(ep string) error {
+	if ep == "" {
+		return nil
+	}
+	if _, _, err := net.SplitHostPort(ep); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validatePortRange(minPort, maxPort uint16) error {
+	if minPort == 0 && maxPort == 0 {
+		// Allow unset
+		return nil
+	}
+	if minPort == 0 || maxPort == 0 {
+		return errInvalidPortRange
+	}
+	if minPort > maxPort {
+		return errInvalidPortRange
+	}
+
+	return nil
+}
+
+func validateTURNAuth(turnCfg *TURNConfig) error {
+	auth := strings.ToLower(strings.TrimSpace(turnCfg.Auth))
+	switch auth {
+	case "", "static":
+		if strings.TrimSpace(turnCfg.User) == "" || strings.TrimSpace(turnCfg.Password) == "" {
+			return errEmptyTURNUserPwd
+		}
+	case "long-term", "longterm", "long_term":
+		if strings.TrimSpace(turnCfg.Secret) == "" {
+			return errEmptyTURNToken
+		}
+	default:
+		return errInvalidTURNAuth
+	}
+
+	return nil
+}
+
+func validateTLSConfig(tlsCfg *TLSConfig) error {
+	if tlsCfg.Endpoint == "" {
+		return nil // TLS not enabled
+	}
+	// If any TLS param is set, enforce the full set.
+	if err := validateEndpoint(tlsCfg.Endpoint); err != nil {
+		return err
+	}
+	if tlsCfg.Cert == "" || tlsCfg.Key == "" {
+		return errEmptyTLSCertKey
+	}
+
+	if tlsCfg.Version != "" {
+		_, ok := tlsVersionMap[strings.ToUpper(tlsCfg.Version)]
+		if !ok {
+			return errInvalidTLSVersion
+		}
+	}
+
+	return nil
 }

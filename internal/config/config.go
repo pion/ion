@@ -157,7 +157,7 @@ func RegisterFlags(fs *pflag.FlagSet) {
 	fs.String("ice.turn.tcp_endpoint", def.ICE.TURN.TCPEndpoint, "TURN TCP bind (host:port or :port)")
 	fs.String("ice.turn.public_ip", def.ICE.TURN.PublicIP, "Public IP return to TURN client")
 	fs.String("ice.turn.realm", def.ICE.TURN.Realm, "TURN realm")
-	fs.String("ice.turn.auth", def.ICE.TURN.Auth, "TURN auth mode (e.g. 'long-term'|'shared-secret')")
+	fs.String("ice.turn.auth", def.ICE.TURN.Auth, "TURN auth mode (long-term|static)")
 	fs.String("ice.turn.user", def.ICE.TURN.User, "TURN static username (for long-term auth)")
 	fs.String("ice.turn.password", def.ICE.TURN.Password, "TURN static password (for long-term auth)")
 	fs.String("ice.turn.secret", def.ICE.TURN.Secret, "TURN shared secret (for time-limited creds)")
@@ -169,7 +169,7 @@ func RegisterFlags(fs *pflag.FlagSet) {
 	fs.String("ice.turn.tls.endpoint", def.ICE.TURN.TLS.Endpoint, "TURN TLS bind (host:port or :port)")
 	fs.String("ice.turn.tls.cert", def.ICE.TURN.TLS.Cert, "TURN TLS certificate file path")
 	fs.String("ice.turn.tls.key", def.ICE.TURN.TLS.Key, "TURN TLS private key file path")
-	fs.Uint16("ice.turn.tls.version", def.ICE.TURN.TLS.Version, "TURN TLS version")
+	fs.String("ice.turn.tls.version", def.ICE.TURN.TLS.Version, "TURN TLS version (TLS12|TLS13)")
 }
 
 // Load returns config struct for ION.
@@ -243,6 +243,11 @@ func Load(fs *pflag.FlagSet) (Config, error) {
 
 	if err := vp.UnmarshalExact(&cfg); err != nil {
 		return Config{}, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	// Validate
+	if err := cfg.ICE.Validate(); err != nil {
+		return cfg, err
 	}
 
 	return cfg, nil
