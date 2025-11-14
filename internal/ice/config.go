@@ -7,10 +7,11 @@ package ice
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net"
 	"strings"
 	"time"
+
+	"github.com/pion/ion/v2/internal/utils"
 )
 
 type (
@@ -301,10 +302,10 @@ func (cfg *ICEConfig) Validate() error {
 		if cfg.STUN.UDPEndpoint == "" && cfg.STUN.TCPEndpoint == "" {
 			return errEmptySTUNEndpoint
 		}
-		if err := validateEndpoint(cfg.STUN.UDPEndpoint); err != nil {
+		if err := utils.ValidateEndpoint(cfg.STUN.UDPEndpoint); err != nil {
 			return err
 		}
-		if err := validateEndpoint(cfg.STUN.TCPEndpoint); err != nil {
+		if err := utils.ValidateEndpoint(cfg.STUN.TCPEndpoint); err != nil {
 			return err
 		}
 	}
@@ -326,13 +327,13 @@ func validateTURN(cfg *TURNConfig) error {
 		return errEmptyTURNEndpoint
 	}
 
-	if err := validateEndpoint(cfg.UDPEndpoint); err != nil {
+	if err := utils.ValidateEndpoint(cfg.UDPEndpoint); err != nil {
 		return err
 	}
-	if err := validateEndpoint(cfg.TCPEndpoint); err != nil {
+	if err := utils.ValidateEndpoint(cfg.TCPEndpoint); err != nil {
 		return err
 	}
-	if err := validateEndpoint(cfg.TLS.Endpoint); err != nil {
+	if err := utils.ValidateEndpoint(cfg.TLS.Endpoint); err != nil {
 		return err
 	}
 
@@ -350,17 +351,6 @@ func validateTURN(cfg *TURNConfig) error {
 
 	if err := validateTLSConfig(&cfg.TLS); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func validateEndpoint(ep string) error {
-	if ep == "" {
-		return nil
-	}
-	if _, _, err := net.SplitHostPort(ep); err != nil {
-		return fmt.Errorf("%w: %w", errInvalidHostPort, err)
 	}
 
 	return nil
@@ -404,7 +394,7 @@ func validateTLSConfig(tlsCfg *TLSConfig) error {
 		return nil // TLS not enabled
 	}
 	// If any TLS param is set, enforce the full set.
-	if err := validateEndpoint(tlsCfg.Endpoint); err != nil {
+	if err := utils.ValidateEndpoint(tlsCfg.Endpoint); err != nil {
 		return err
 	}
 	if tlsCfg.Cert == "" || tlsCfg.Key == "" {

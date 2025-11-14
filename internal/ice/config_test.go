@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"testing"
 
+	"github.com/pion/ion/v2/internal/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -322,7 +323,7 @@ func TestICEConfigValidate(t *testing.T) {
 
 				return cfg
 			}(),
-			err: errInvalidHostPort,
+			err: utils.ErrInvalidHostPort,
 		},
 		{
 			name: "STUN enabled but invalid TCP endpoints",
@@ -334,7 +335,7 @@ func TestICEConfigValidate(t *testing.T) {
 
 				return cfg
 			}(),
-			err: errInvalidHostPort,
+			err: utils.ErrInvalidHostPort,
 		},
 		{
 			name: "TURN enabled but invalid UDP endpoints",
@@ -346,7 +347,7 @@ func TestICEConfigValidate(t *testing.T) {
 
 				return cfg
 			}(),
-			err: errInvalidHostPort,
+			err: utils.ErrInvalidHostPort,
 		},
 		{
 			name: "TURN enabled but invalid TCP endpoints",
@@ -358,7 +359,7 @@ func TestICEConfigValidate(t *testing.T) {
 
 				return cfg
 			}(),
-			err: errInvalidHostPort,
+			err: utils.ErrInvalidHostPort,
 		},
 		{
 			name: "TURN invalid TLS endpoints",
@@ -369,7 +370,7 @@ func TestICEConfigValidate(t *testing.T) {
 
 				return cfg
 			}(),
-			err: errInvalidHostPort,
+			err: utils.ErrInvalidHostPort,
 		},
 		{
 			name: "TURN enabled but all endpoints empty",

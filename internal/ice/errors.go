@@ -23,5 +23,3 @@ var errEmptyTLSCertKey = errors.New("tls cert or key is empty")
 var errInvalidTLSVersion = errors.New("invalid TLS version")
 
 var errInvalidPortRange = errors.New("invalid port range")
-
-var errInvalidHostPort = errors.New("invalid host port string")

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	ionICE "github.com/pion/ion/v2/internal/ice"
+	"github.com/pion/ion/v2/internal/utils"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -20,8 +21,12 @@ type (
 )
 
 var (
-	ErrInvalidWriterType = errors.New("invalid writer type")
-	ErrInvalidFormatType = errors.New("invalid format type")
+	ErrInvalidWriterType      = errors.New("invalid writer type")
+	ErrInvalidFormatType      = errors.New("invalid format type")
+	errInvalidLogLevel        = errors.New("invalid log level")
+	errInvalidLogFormat       = errors.New("invalid log format")
+	errEmptyOTLPServiceName   = errors.New("empty otlp service name")
+	errInvalidOTLPSampleRatio = errors.New("invalid otlp sample ratio")
 )
 
 const (
@@ -254,11 +259,59 @@ func Load(fs *pflag.FlagSet) (Config, error) {
 }
 
 func (cfg *Config) Validate() error {
-	// Base
+	// Telemetry
+	if err := cfg.Telemetry.validate(); err != nil {
+		return err
+	}
 
 	// ICE
 	if err := cfg.ICE.Validate(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// nolint:cyclop
+func (cfg *TelemetryConfig) validate() error {
+	// Log
+	switch cfg.Logs.Level {
+	case "debug", "info", "warn", "error":
+	default:
+		return errInvalidLogLevel
+	}
+	switch cfg.Logs.Format {
+	case LogFormatJSON, LogFormatText:
+	default:
+		return errInvalidLogFormat
+	}
+
+	// Metrics
+	if cfg.Metrics.Prometheus.Enabled {
+		if err := utils.ValidateEndpoint(cfg.Metrics.Prometheus.Addr); err != nil {
+			return err
+		}
+	}
+
+	if cfg.Metrics.OTLP.Enabled {
+		if err := utils.ValidateEndpoint(cfg.Metrics.OTLP.Endpoint); err != nil {
+			return err
+		}
+	}
+
+	// Traces
+	if cfg.Traces.OTLP.Enabled {
+		if err := utils.ValidateEndpoint(cfg.Traces.OTLP.Endpoint); err != nil {
+			return err
+		}
+
+		if cfg.Traces.OTLP.ServiceName == "" {
+			return errEmptyOTLPServiceName
+		}
+
+		if cfg.Traces.OTLP.SampleRatio < 0 {
+			return errInvalidOTLPSampleRatio
+		}
 	}
 
 	return nil

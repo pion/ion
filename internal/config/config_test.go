@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/pion/ion/v2/internal/utils"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -70,12 +71,25 @@ func TestDefaults(t *testing.T) {
 	require.Equal(t, DefaultPrometheusAddr, cfg.Telemetry.Metrics.Prometheus.Addr)
 }
 
-func TestLoadErr(t *testing.T) {
+func TestLoadICEErr(t *testing.T) {
 	resetViperAndEnv(t)
 
 	fs := newFS(t /* no args */)
 	err := fs.Parse([]string{
 		"--ice.turn.enabled",
+		"--ice.turn.port_range_min=0",
+	})
+	require.NoError(t, err)
+	_, err = Load(fs)
+	require.Error(t, err)
+}
+
+func TestLoadTelemetryErr(t *testing.T) {
+	resetViperAndEnv(t)
+
+	fs := newFS(t /* no args */)
+	err := fs.Parse([]string{
+		"--telemetry.logs.level=invalid",
 		"--ice.turn.port_range_min=0",
 	})
 	require.NoError(t, err)
@@ -314,6 +328,102 @@ func TestRegisterFlags(t *testing.T) {
 			require.NotNil(t, f, "flag %q not registered", tt.name)
 			require.Equal(t, tt.defValue, f.DefValue, "default mismatch for %q", tt.name)
 			require.Equal(t, tt.usage, f.Usage, "usage mismatch for %q", tt.name)
+		})
+	}
+}
+
+func TestTelemetryConfigValidate(t *testing.T) {
+	t.Helper()
+
+	tests := []struct {
+		err    error
+		mutate func(cfg *TelemetryConfig)
+		name   string
+	}{
+		{
+			name: "valid config passes",
+			mutate: func(cfg *TelemetryConfig) {
+			},
+			err: nil,
+		},
+		{
+			name: "invalid log level",
+			mutate: func(cfg *TelemetryConfig) {
+				cfg.Logs.Level = "verbose"
+			},
+			err: errInvalidLogLevel,
+		},
+		{
+			name: "invalid log format",
+			mutate: func(cfg *TelemetryConfig) {
+				cfg.Logs.Format = "xml"
+			},
+			err: errInvalidLogFormat,
+		},
+		{
+			name: "traces OTLP empty service name",
+			mutate: func(cfg *TelemetryConfig) {
+				cfg.Traces.OTLP.Enabled = true
+				cfg.Traces.OTLP.ServiceName = ""
+			},
+			err: errEmptyOTLPServiceName,
+		},
+		{
+			name: "traces OTLP negative sample ratio",
+			mutate: func(cfg *TelemetryConfig) {
+				cfg.Traces.OTLP.Enabled = true
+				cfg.Traces.OTLP.SampleRatio = -0.1
+			},
+			err: errInvalidOTLPSampleRatio,
+		},
+		{
+			name: "metrics prometheus invalid endpoint",
+			mutate: func(cfg *TelemetryConfig) {
+				cfg.Metrics.Prometheus.Enabled = true
+				cfg.Metrics.Prometheus.Addr = "not-a-valid-endpoint"
+			},
+			err: utils.ErrInvalidHostPort,
+		},
+		{
+			name: "metrics OTLP invalid endpoint",
+			mutate: func(cfg *TelemetryConfig) {
+				cfg.Metrics.OTLP.Enabled = true
+				cfg.Metrics.OTLP.Endpoint = "also-bad-endpoint"
+			},
+			err: utils.ErrInvalidHostPort,
+		},
+		{
+			name: "traces OTLP invalid endpoint",
+			mutate: func(cfg *TelemetryConfig) {
+				cfg.Traces.OTLP.Enabled = true
+				cfg.Traces.OTLP.Endpoint = "bad-endpoint"
+				cfg.Traces.OTLP.ServiceName = "svc"
+				cfg.Traces.OTLP.SampleRatio = 1.0
+			},
+			err: utils.ErrInvalidHostPort,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			cfg := DefaultConfig().Telemetry
+			if testCase.mutate != nil {
+				testCase.mutate(&cfg)
+			}
+
+			err := cfg.validate()
+
+			switch {
+			case testCase.err != nil:
+				require.Error(t, err)
+				require.ErrorIs(t, err, testCase.err)
+			case testCase.name == "metrics prometheus invalid endpoint" ||
+				testCase.name == "metrics OTLP invalid endpoint" ||
+				testCase.name == "traces OTLP invalid endpoint":
+				require.Error(t, err)
+			default:
+				require.NoError(t, err)
+			}
 		})
 	}
 }
