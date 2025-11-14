@@ -81,7 +81,6 @@ func TestLoadErr(t *testing.T) {
 	require.NoError(t, err)
 	_, err = Load(fs)
 	require.Error(t, err)
-
 }
 
 func TestPriority_FileOverridesDefault(t *testing.T) {

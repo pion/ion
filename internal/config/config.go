@@ -246,9 +246,20 @@ func Load(fs *pflag.FlagSet) (Config, error) {
 	}
 
 	// Validate
-	if err := cfg.ICE.Validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return cfg, err
 	}
 
 	return cfg, nil
+}
+
+func (cfg *Config) Validate() error {
+	// Base
+
+	// ICE
+	if err := cfg.ICE.Validate(); err != nil {
+		return err
+	}
+
+	return nil
 }
