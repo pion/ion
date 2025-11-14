@@ -162,7 +162,7 @@ func RegisterFlags(fs *pflag.FlagSet) {
 	fs.String("ice.turn.password", def.ICE.TURN.Password, "TURN static password (for long-term auth)")
 	fs.String("ice.turn.secret", def.ICE.TURN.Secret, "TURN shared secret (for time-limited creds)")
 	fs.Uint16("ice.turn.port_range_min", def.ICE.TURN.PortRangeMin, "TURN min port range")
-	fs.Uint16("ice.turn.port_range_max", def.ICE.TURN.PortRangeMin, "TURN max port range")
+	fs.Uint16("ice.turn.port_range_max", def.ICE.TURN.PortRangeMax, "TURN max port range")
 	fs.String("ice.turn.address", def.ICE.TURN.Address, "TURN address")
 
 	// ice.turn.tls
