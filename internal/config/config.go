@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"strings"
 
+	ionICE "github.com/pion/ion/v2/internal/ice"
+	"github.com/pion/ion/v2/internal/utils"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -19,8 +21,12 @@ type (
 )
 
 var (
-	ErrInvalidWriterType = errors.New("invalid writer type")
-	ErrInvalidFormatType = errors.New("invalid format type")
+	ErrInvalidWriterType      = errors.New("invalid writer type")
+	ErrInvalidFormatType      = errors.New("invalid format type")
+	errInvalidLogLevel        = errors.New("invalid log level")
+	errInvalidLogFormat       = errors.New("invalid log format")
+	errEmptyOTLPServiceName   = errors.New("empty otlp service name")
+	errInvalidOTLPSampleRatio = errors.New("invalid otlp sample ratio")
 )
 
 const (
@@ -77,6 +83,7 @@ type TelemetryConfig struct {
 }
 
 type Config struct {
+	ICE       ionICE.ICEConfig
 	Telemetry TelemetryConfig `mapstructure:"telemetry"`
 }
 
@@ -106,6 +113,7 @@ func DefaultConfig() Config {
 				},
 			},
 		},
+		ICE: ionICE.DefaultICEConfig(),
 	}
 }
 
@@ -142,6 +150,31 @@ func RegisterFlags(fs *pflag.FlagSet) {
 		"OTLP traces endpoint (e.g. host:4317)")
 	fs.Float64("telemetry.traces.otlp.sample_ratio", def.Telemetry.Traces.OTLP.SampleRatio,
 		"Tracing sampler ratio in [0.0,1.0]")
+
+	// ice.stun
+	fs.Bool("ice.stun.enabled", def.ICE.STUN.Enabled, "Enable embedded STUN server")
+	fs.String("ice.stun.udp_endpoint", def.ICE.STUN.UDPEndpoint, "STUN UDP bind (host:port or :port)")
+	fs.String("ice.stun.tcp_endpoint", def.ICE.STUN.TCPEndpoint, "STUN TCP bind (host:port or :port)")
+
+	// ice.turn
+	fs.Bool("ice.turn.enabled", def.ICE.TURN.Enabled, "Enable embedded TURN server")
+	fs.String("ice.turn.udp_endpoint", def.ICE.TURN.UDPEndpoint, "TURN UDP bind (host:port or :port)")
+	fs.String("ice.turn.tcp_endpoint", def.ICE.TURN.TCPEndpoint, "TURN TCP bind (host:port or :port)")
+	fs.String("ice.turn.public_ip", def.ICE.TURN.PublicIP, "Public IP return to TURN client")
+	fs.String("ice.turn.realm", def.ICE.TURN.Realm, "TURN realm")
+	fs.String("ice.turn.auth", def.ICE.TURN.Auth, "TURN auth mode (long-term|static)")
+	fs.String("ice.turn.user", def.ICE.TURN.User, "TURN static username (for long-term auth)")
+	fs.String("ice.turn.password", def.ICE.TURN.Password, "TURN static password (for long-term auth)")
+	fs.String("ice.turn.secret", def.ICE.TURN.Secret, "TURN shared secret (for time-limited creds)")
+	fs.Uint16("ice.turn.port_range_min", def.ICE.TURN.PortRangeMin, "TURN min port range")
+	fs.Uint16("ice.turn.port_range_max", def.ICE.TURN.PortRangeMax, "TURN max port range")
+	fs.String("ice.turn.address", def.ICE.TURN.Address, "TURN address")
+
+	// ice.turn.tls
+	fs.String("ice.turn.tls.endpoint", def.ICE.TURN.TLS.Endpoint, "TURN TLS bind (host:port or :port)")
+	fs.String("ice.turn.tls.cert", def.ICE.TURN.TLS.Cert, "TURN TLS certificate file path")
+	fs.String("ice.turn.tls.key", def.ICE.TURN.TLS.Key, "TURN TLS private key file path")
+	fs.String("ice.turn.tls.version", def.ICE.TURN.TLS.Version, "TURN TLS version (TLS12|TLS13)")
 }
 
 // Load returns config struct for ION.
@@ -163,6 +196,27 @@ func Load(fs *pflag.FlagSet) (Config, error) {
 	vp.SetDefault("telemetry.traces.otlp.service_name", cfg.Telemetry.Traces.OTLP.ServiceName)
 	vp.SetDefault("telemetry.traces.otlp.endpoint", cfg.Telemetry.Traces.OTLP.Endpoint)
 	vp.SetDefault("telemetry.traces.otlp.sample_ratio", cfg.Telemetry.Traces.OTLP.SampleRatio)
+
+	vp.SetDefault("ice.stun.enabled", cfg.ICE.STUN.Enabled)
+	vp.SetDefault("ice.stun.udp_endpoint", cfg.ICE.STUN.UDPEndpoint)
+	vp.SetDefault("ice.stun.tcp_endpoint", cfg.ICE.STUN.TCPEndpoint)
+
+	vp.SetDefault("ice.turn.enabled", cfg.ICE.TURN.Enabled)
+	vp.SetDefault("ice.turn.udp_endpoint", cfg.ICE.TURN.UDPEndpoint)
+	vp.SetDefault("ice.turn.tcp_endpoint", cfg.ICE.TURN.TCPEndpoint)
+	vp.SetDefault("ice.turn.public_ip", (cfg.ICE.TURN.PublicIP))
+	vp.SetDefault("ice.turn.realm", cfg.ICE.TURN.Realm)
+	vp.SetDefault("ice.turn.auth", cfg.ICE.TURN.Auth)
+	vp.SetDefault("ice.turn.user", cfg.ICE.TURN.User)
+	vp.SetDefault("ice.turn.password", cfg.ICE.TURN.Password)
+	vp.SetDefault("ice.turn.secret", cfg.ICE.TURN.Secret)
+	vp.SetDefault("ice.turn.port_range_min", (cfg.ICE.TURN.PortRangeMin))
+	vp.SetDefault("ice.turn.port_range_max", (cfg.ICE.TURN.PortRangeMax))
+	vp.SetDefault("ice.turn.address", (cfg.ICE.TURN.Address))
+	vp.SetDefault("ice.turn.tls.endpoint", (cfg.ICE.TURN.TLS.Endpoint))
+	vp.SetDefault("ice.turn.tls.cert", (cfg.ICE.TURN.TLS.Cert))
+	vp.SetDefault("ice.turn.tls.key", (cfg.ICE.TURN.TLS.Key))
+	vp.SetDefault("ice.turn.tls.version", (cfg.ICE.TURN.TLS.Version))
 
 	// Env
 	vp.SetEnvPrefix("ION")
@@ -196,5 +250,69 @@ func Load(fs *pflag.FlagSet) (Config, error) {
 		return Config{}, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	// Validate
+	if err := cfg.Validate(); err != nil {
+		return cfg, err
+	}
+
 	return cfg, nil
+}
+
+func (cfg *Config) Validate() error {
+	// Telemetry
+	if err := cfg.Telemetry.validate(); err != nil {
+		return err
+	}
+
+	// ICE
+	if err := cfg.ICE.Validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// nolint:cyclop
+func (cfg *TelemetryConfig) validate() error {
+	// Log
+	switch cfg.Logs.Level {
+	case "debug", "info", "warn", "error":
+	default:
+		return errInvalidLogLevel
+	}
+	switch cfg.Logs.Format {
+	case LogFormatJSON, LogFormatText:
+	default:
+		return errInvalidLogFormat
+	}
+
+	// Metrics
+	if cfg.Metrics.Prometheus.Enabled {
+		if err := utils.ValidateEndpoint(cfg.Metrics.Prometheus.Addr); err != nil {
+			return err
+		}
+	}
+
+	if cfg.Metrics.OTLP.Enabled {
+		if err := utils.ValidateEndpoint(cfg.Metrics.OTLP.Endpoint); err != nil {
+			return err
+		}
+	}
+
+	// Traces
+	if cfg.Traces.OTLP.Enabled {
+		if err := utils.ValidateEndpoint(cfg.Traces.OTLP.Endpoint); err != nil {
+			return err
+		}
+
+		if cfg.Traces.OTLP.ServiceName == "" {
+			return errEmptyOTLPServiceName
+		}
+
+		if cfg.Traces.OTLP.SampleRatio < 0 {
+			return errInvalidOTLPSampleRatio
+		}
+	}
+
+	return nil
 }
