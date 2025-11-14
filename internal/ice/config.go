@@ -7,6 +7,7 @@ package ice
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -359,7 +360,7 @@ func validateEndpoint(ep string) error {
 		return nil
 	}
 	if _, _, err := net.SplitHostPort(ep); err != nil {
-		return err
+		return fmt.Errorf("%w: %w", errInvalidHostPort, err)
 	}
 
 	return nil

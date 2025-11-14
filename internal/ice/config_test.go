@@ -3,6 +3,7 @@
 package ice
 
 import (
+	"crypto/tls"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -270,6 +271,7 @@ func TestSameAddr(t *testing.T) {
 		{"zero vs bare", "0.0.0.0:3478", defaultEP, true, false},
 		{"missing port", "127.0.0.1", defaultEP, false, true},
 		{"malformed", ";3478", defaultEP, false, true},
+		{"malformed", defaultEP, ";3479", false, true},
 	}
 
 	for _, tc := range tests {
@@ -286,6 +288,7 @@ func TestSameAddr(t *testing.T) {
 	}
 }
 
+//nolint:maintidx
 func TestICEConfigValidate(t *testing.T) {
 	tests := []struct {
 		err  error
@@ -308,6 +311,65 @@ func TestICEConfigValidate(t *testing.T) {
 				return cfg
 			}(),
 			err: errEmptySTUNEndpoint,
+		},
+		{
+			name: "STUN enabled but invalid UDP endpoints",
+			cfg: func() ICEConfig {
+				cfg := DefaultICEConfig()
+				cfg.STUN.Enabled = true
+				cfg.STUN.UDPEndpoint = ";1234"
+				cfg.STUN.TCPEndpoint = ""
+
+				return cfg
+			}(),
+			err: errInvalidHostPort,
+		},
+		{
+			name: "STUN enabled but invalid TCP endpoints",
+			cfg: func() ICEConfig {
+				cfg := DefaultICEConfig()
+				cfg.STUN.Enabled = true
+				cfg.STUN.UDPEndpoint = ""
+				cfg.STUN.TCPEndpoint = ";1235"
+
+				return cfg
+			}(),
+			err: errInvalidHostPort,
+		},
+		{
+			name: "TURN enabled but invalid UDP endpoints",
+			cfg: func() ICEConfig {
+				cfg := DefaultICEConfig()
+				cfg.TURN.Enabled = true
+				cfg.TURN.UDPEndpoint = ";1234"
+				cfg.TURN.TCPEndpoint = ""
+
+				return cfg
+			}(),
+			err: errInvalidHostPort,
+		},
+		{
+			name: "TURN enabled but invalid TCP endpoints",
+			cfg: func() ICEConfig {
+				cfg := DefaultICEConfig()
+				cfg.TURN.Enabled = true
+				cfg.TURN.UDPEndpoint = ""
+				cfg.TURN.TCPEndpoint = ";1235"
+
+				return cfg
+			}(),
+			err: errInvalidHostPort,
+		},
+		{
+			name: "TURN invalid TLS endpoints",
+			cfg: func() ICEConfig {
+				cfg := DefaultICEConfig()
+				cfg.TURN.Enabled = true
+				cfg.TURN.TLS.Endpoint = ";1236"
+
+				return cfg
+			}(),
+			err: errInvalidHostPort,
 		},
 		{
 			name: "TURN enabled but all endpoints empty",
@@ -357,6 +419,55 @@ func TestICEConfigValidate(t *testing.T) {
 				return cfg
 			}(),
 			err: errInvalidPortRange,
+		},
+		{
+			name: "TURN invalid port range (min > max)",
+			cfg: func() ICEConfig {
+				cfg := DefaultICEConfig()
+				cfg.TURN.Enabled = true
+				cfg.TURN.UDPEndpoint = defaultEP
+				cfg.TURN.Realm = realmIon
+				cfg.TURN.Auth = authStatic
+				cfg.TURN.User = "u"
+				cfg.TURN.Password = "p"
+				cfg.TURN.PortRangeMin = 100
+				cfg.TURN.PortRangeMax = 0
+
+				return cfg
+			}(),
+			err: errInvalidPortRange,
+		},
+		{
+			name: "TURN valid port range (min = max = 0)",
+			cfg: func() ICEConfig {
+				cfg := DefaultICEConfig()
+				cfg.TURN.Enabled = true
+				cfg.TURN.UDPEndpoint = defaultEP
+				cfg.TURN.Realm = realmIon
+				cfg.TURN.Auth = authStatic
+				cfg.TURN.User = "u"
+				cfg.TURN.Password = "p"
+				cfg.TURN.PortRangeMin = 0
+				cfg.TURN.PortRangeMax = 0
+
+				return cfg
+			}(),
+			err: nil,
+		},
+		{
+			name: "malformed auth setting",
+			cfg: func() ICEConfig {
+				cfg := DefaultICEConfig()
+				cfg.TURN.Enabled = true
+				cfg.TURN.UDPEndpoint = defaultEP
+				cfg.TURN.Realm = realmIon
+				cfg.TURN.Auth = "statiic"
+				cfg.TURN.User = ""
+				cfg.TURN.Password = "p"
+
+				return cfg
+			}(),
+			err: errInvalidTURNAuth,
 		},
 		{
 			name: "TURN static auth missing user",
@@ -456,6 +567,38 @@ func TestICEConfigValidate(t *testing.T) {
 			} else {
 				require.ErrorIs(t, err, testCase.err, "wrong error returned")
 			}
+		})
+	}
+}
+
+func TestGetTLSVersion(t *testing.T) {
+	tests := []struct {
+		name     string
+		tlsStr   string
+		expected uint16
+	}{
+		{
+			name:     "empty",
+			tlsStr:   "",
+			expected: tls.VersionTLS12,
+		},
+		{
+			name:     "lower",
+			tlsStr:   "tls11",
+			expected: tls.VersionTLS11,
+		},
+		{
+			name:     "upper",
+			tlsStr:   "TLS13",
+			expected: tls.VersionTLS13,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			cfg := TLSConfig{Version: testCase.tlsStr}
+			tlsVer := cfg.GetTLSVersion()
+			require.Equal(t, testCase.expected, tlsVer)
 		})
 	}
 }
