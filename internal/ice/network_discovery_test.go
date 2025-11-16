@@ -57,7 +57,6 @@ func TestDiscoverLocalIP_BestEffort(t *testing.T) {
 func TestConnect_Success(t *testing.T) {
 	log := newTestLogger(t)
 
-	// This only needs to resolve and create a local UDP socket; no remote server is required.
 	conn, err := connect("127.0.0.1:0", log)
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -84,7 +83,6 @@ func TestConnect_InvalidAddress(t *testing.T) {
 }
 
 func TestStunServerConn_Close(t *testing.T) {
-	// Make sure Close just delegates to the underlying PacketConn.
 	pc, err := net.ListenPacket("udp4", "127.0.0.1:0") //nolint:noctx
 	require.NoError(t, err)
 
@@ -124,11 +122,9 @@ func TestRoundTrip_Success(t *testing.T) {
 		messageChan: make(chan *stun.Message, 1),
 	}
 
-	// Prepare a response that roundTrip will read from messageChan.
 	respMsg := stun.MustBuild(stun.TransactionID, stun.BindingSuccess)
 
 	go func() {
-		// We don't care about what gets written to the socket in this unit test.
 		srv.messageChan <- respMsg
 	}()
 
@@ -145,7 +141,6 @@ func TestRoundTrip_WriteError(t *testing.T) {
 	pc, err := net.ListenPacket("udp4", "127.0.0.1:0") //nolint:noctx
 	require.NoError(t, err)
 
-	// Close before calling roundTrip so WriteTo fails.
 	if cerr := pc.Close(); cerr != nil {
 		t.Logf("failed to close PacketConn: %v", cerr)
 	}
@@ -200,12 +195,10 @@ func TestListen_ClosesChannelOnReadError(t *testing.T) {
 
 	msgCh := listen(udpConn, log)
 
-	// Force ReadFromUDP to error by closing the underlying connection.
 	if cerr := udpConn.Close(); cerr != nil {
 		t.Logf("failed to close UDPConn: %v", cerr)
 	}
 
-	// Channel should eventually be closed by listener goroutine.
 	if _, ok := <-msgCh; ok {
 		require.True(t, ok)
 	}
@@ -216,10 +209,8 @@ func TestParse_ReturnsAttributesWhenPresent(t *testing.T) {
 
 	var msg stun.Message
 	msg.Type = stun.BindingSuccess
-	// Any 16-byte transaction ID is fine for the test.
 	msg.TransactionID = [stun.TransactionIDSize]byte{1, 2, 3, 4}
 
-	// Add a few "user" attributes. We don't care about actual values, just that GetFrom succeeds.
 	xorAddr := &stun.XORMappedAddress{
 		IP:   net.IPv4(192, 0, 2, 1),
 		Port: 3478,
@@ -263,7 +254,6 @@ func TestParse_AllowsMissingAttributes(t *testing.T) {
 
 	ret := parse(msg, log)
 
-	// All attributes are optional; with none set, everything should be nil.
 	require.Nil(t, ret.xorAddr)
 	require.Nil(t, ret.otherAddr)
 	require.Nil(t, ret.respOrigin)
