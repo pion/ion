@@ -11,7 +11,6 @@ import (
 	"io"
 	"log/slog"
 	"net"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -33,9 +32,6 @@ func newTestLogger(tb testing.TB) *slog.Logger {
 
 func TestDiscoverLocalIP_BestEffort(t *testing.T) {
 	// First check if this machine even has a non-loopback IPv4 address.
-	if runtime.GOOS == "js" {
-		t.Skip("not supported on wasm/js")
-	}
 	addrs, err := net.InterfaceAddrs()
 	require.NoError(t, err)
 
