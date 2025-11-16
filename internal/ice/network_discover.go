@@ -44,6 +44,10 @@ var (
 	errDiscoverMapping   = errors.New("error discovering nat mapping")
 	errDiscoverFiltering = errors.New("error discovering nat filtering")
 	errDiscoverLocal     = errors.New("cannot discover local IP")
+	errNoLocalIPFound    = errors.New("no valid local ip address found")
+	errResponseMessage   = errors.New("error reading from response message channel")
+	errTimedOut          = errors.New("timed out waiting for response")
+	errNoOtherAddress    = errors.New("no OTHER-ADDRESS in message")
 )
 
 func (c *stunServerConn) Close() error {
@@ -67,7 +71,7 @@ func DiscoverLocalIP() (string, error) {
 		}
 	}
 
-	return "", ErrNoLocalIPFound
+	return "", errNoLocalIPFound
 }
 
 // DiscoverNatMapping determines NAT mapping under RFC5780: 4.3.

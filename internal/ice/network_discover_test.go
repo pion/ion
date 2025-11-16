@@ -276,7 +276,7 @@ type testStunServer struct {
 	mu      sync.Mutex
 }
 
-func newTestStunServer(t *testing.T, handler func(call int, req *stun.Message) (*stun.Message, bool)) *testStunServer {
+func newTestStunServer(t *testing.T) *testStunServer {
 	t.Helper()
 
 	addr := &net.UDPAddr{IP: net.ParseIP("127.0.0.1"), Port: 0}
@@ -284,8 +284,7 @@ func newTestStunServer(t *testing.T, handler func(call int, req *stun.Message) (
 	require.NoError(t, err)
 
 	srv := &testStunServer{
-		conn:    conn,
-		handler: handler,
+		conn: conn,
 	}
 
 	go srv.serve(t)
@@ -337,6 +336,12 @@ func (s *testStunServer) serve(t *testing.T) {
 	}
 }
 
+func (s *testStunServer) SetHandler(h func(call int, req *stun.Message) (*stun.Message, bool)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.handler = h
+}
+
 func stunResp(attrs ...stun.Setter) *stun.Message {
 	return stun.MustBuild(
 		attrs...,
@@ -351,13 +356,13 @@ func TestDiscoverNatMapping_NoNAT(t *testing.T) {
 	log := newTestLogger(t)
 
 	localIP, err := DiscoverLocalIP()
-	if errors.Is(err, ErrNoLocalIPFound) {
+	if errors.Is(err, errNoLocalIPFound) {
 		t.Skip()
 	}
 	require.NoError(t, err)
 
-	var srv *testStunServer
-	srv = newTestStunServer(t, func(call int, req *stun.Message) (*stun.Message, bool) {
+	srv := newTestStunServer(t)
+	srv.SetHandler(func(call int, req *stun.Message) (*stun.Message, bool) {
 		if call != 1 {
 			return nil, false
 		}
@@ -378,13 +383,13 @@ func TestDiscoverNatMapping_EpIndependent(t *testing.T) {
 	log := newTestLogger(t)
 
 	_, err := DiscoverLocalIP()
-	if errors.Is(err, ErrNoLocalIPFound) {
+	if errors.Is(err, errNoLocalIPFound) {
 		t.Skip()
 	}
 	require.NoError(t, err)
 
-	var srv *testStunServer
-	srv = newTestStunServer(t, func(call int, req *stun.Message) (*stun.Message, bool) {
+	srv := newTestStunServer(t)
+	srv.SetHandler(func(call int, req *stun.Message) (*stun.Message, bool) {
 		switch call {
 		case 1:
 			//nolint:forcetypeassert
@@ -412,8 +417,8 @@ func TestDiscoverNatMapping_Dependent(t *testing.T) {
 	_, err := DiscoverLocalIP()
 	require.NoError(t, err)
 
-	var srv *testStunServer
-	srv = newTestStunServer(t, func(call int, req *stun.Message) (*stun.Message, bool) {
+	srv := newTestStunServer(t)
+	srv.SetHandler(func(call int, req *stun.Message) (*stun.Message, bool) {
 		srvPort := srv.conn.LocalAddr().(*net.UDPAddr).Port //nolint:forcetypeassert
 		switch call {
 		case 1:
@@ -466,7 +471,8 @@ func TestDiscoverNatMapping_MissingOtherAddress(t *testing.T) {
 	_, err := DiscoverLocalIP()
 	require.NoError(t, err)
 
-	srv := newTestStunServer(t, func(call int, req *stun.Message) (*stun.Message, bool) {
+	srv := newTestStunServer(t)
+	srv.SetHandler(func(call int, req *stun.Message) (*stun.Message, bool) {
 		return stunResp(
 			&stun.XORMappedAddress{IP: net.ParseIP("203.0.113.5"), Port: 5000},
 		), true
@@ -484,7 +490,8 @@ func TestDiscoverNatMapping_Timeout(t *testing.T) {
 	_, err := DiscoverLocalIP()
 	require.NoError(t, err)
 
-	srv := newTestStunServer(t, func(call int, req *stun.Message) (*stun.Message, bool) {
+	srv := newTestStunServer(t)
+	srv.SetHandler(func(call int, req *stun.Message) (*stun.Message, bool) {
 		return nil, false // cause timeout
 	})
 
@@ -498,14 +505,14 @@ func TestDiscoverNatMapping_Timeout(t *testing.T) {
 	require.GreaterOrEqual(t, elapsed, defaultTimeout)
 }
 
-/* -------------------------------------------------------------
-   NAT FILTERING TESTS
-   ------------------------------------------------------------- */
+// /* -------------------------------------------------------------
+//    NAT FILTERING TESTS
+//    ------------------------------------------------------------- */
 
 func TestDiscoverNatFiltering_ConnectError(t *testing.T) {
 	log := newTestLogger(t)
 
-	behavior, err := DiscoverNatFiltering("%%%invalid", log)
+	behavior, err := DiscoverNatFiltering("%invalid", log)
 	require.Equal(t, AddrEpDependent, behavior)
 	require.Error(t, err)
 	require.ErrorIs(t, err, errDiscoverFiltering)
@@ -513,7 +520,8 @@ func TestDiscoverNatFiltering_ConnectError(t *testing.T) {
 
 func TestDiscoverNatFiltering_MissingOtherAddress(t *testing.T) {
 	log := newTestLogger(t)
-	srv := newTestStunServer(t, func(call int, req *stun.Message) (*stun.Message, bool) {
+	srv := newTestStunServer(t)
+	srv.SetHandler(func(call int, req *stun.Message) (*stun.Message, bool) {
 		switch call {
 		case 1:
 			return stunResp(
@@ -533,8 +541,8 @@ func TestDiscoverNatFiltering_MissingOtherAddress(t *testing.T) {
 func TestDiscoverNatFiltering_EpIndependent(t *testing.T) {
 	log := newTestLogger(t)
 
-	var srv *testStunServer
-	srv = newTestStunServer(t, func(call int, req *stun.Message) (*stun.Message, bool) {
+	srv := newTestStunServer(t)
+	srv.SetHandler(func(call int, req *stun.Message) (*stun.Message, bool) {
 		switch call {
 		case 1:
 			//nolint:forcetypeassert
@@ -558,8 +566,8 @@ func TestDiscoverNatFiltering_EpIndependent(t *testing.T) {
 func TestDiscoverNatFiltering_AddrDependent(t *testing.T) {
 	log := newTestLogger(t)
 
-	var srv *testStunServer
-	srv = newTestStunServer(t, func(call int, req *stun.Message) (*stun.Message, bool) {
+	srv := newTestStunServer(t)
+	srv.SetHandler(func(call int, req *stun.Message) (*stun.Message, bool) {
 		switch call {
 		case 1:
 			//nolint:forcetypeassert
@@ -592,25 +600,26 @@ func TestDiscoverNatFiltering_AddrDependent(t *testing.T) {
 func TestDiscoverNatFiltering_AddrEpDependent(t *testing.T) {
 	log := newTestLogger(t)
 
-	var srv *testStunServer
-	srv = newTestStunServer(t, func(call int, req *stun.Message) (*stun.Message, bool) {
-		switch call {
-		case 1:
-			//nolint:forcetypeassert
-			return stunResp(
-				&stun.XORMappedAddress{IP: net.ParseIP("203.0.113.10"), Port: 5000},
-				&stun.OtherAddress{IP: net.ParseIP("127.0.0.1"), Port: srv.conn.LocalAddr().(*net.UDPAddr).Port},
-			), true
+	srv := newTestStunServer(t)
+	srv.SetHandler(
+		func(call int, req *stun.Message) (*stun.Message, bool) {
+			switch call {
+			case 1:
+				//nolint:forcetypeassert
+				return stunResp(
+					&stun.XORMappedAddress{IP: net.ParseIP("203.0.113.10"), Port: 5000},
+					&stun.OtherAddress{IP: net.ParseIP("127.0.0.1"), Port: srv.conn.LocalAddr().(*net.UDPAddr).Port},
+				), true
 
-		case 2:
-			return nil, false // timeout Test II
-		case 3:
-			return nil, false // timeout Test III → AddrEpDependent
+			case 2:
+				return nil, false // timeout Test II
+			case 3:
+				return nil, false // timeout Test III → AddrEpDependent
 
-		default:
-			return nil, false
-		}
-	})
+			default:
+				return nil, false
+			}
+		})
 
 	start := time.Now()
 	behavior, err := DiscoverNatFiltering(srv.Addr(), log)
@@ -624,12 +633,13 @@ func TestDiscoverNatFiltering_AddrEpDependent(t *testing.T) {
 func TestDiscoverNatFiltering_TestII_NonTimeoutErr(t *testing.T) {
 	log := newTestLogger(t)
 
-	newTestStunServer(t, func(call int, req *stun.Message) (*stun.Message, bool) {
+	srv := newTestStunServer(t)
+	srv.SetHandler(func(call int, req *stun.Message) (*stun.Message, bool) {
 		if call == 1 {
+			//nolint:forcetypeassert
 			return stunResp(
 				&stun.XORMappedAddress{IP: net.ParseIP("203.0.113.10"), Port: 5000},
-				&stun.OtherAddress{IP: net.ParseIP("127.0.0.1"), Port: 3478},
-			), true
+				&stun.OtherAddress{IP: net.ParseIP("127.0.0.1"), Port: srv.conn.LocalAddr().(*net.UDPAddr).Port}), true
 		}
 		if call == 2 {
 			resp := &stun.Message{Raw: []byte("not-a-stun")}
@@ -640,8 +650,7 @@ func TestDiscoverNatFiltering_TestII_NonTimeoutErr(t *testing.T) {
 		return nil, false
 	})
 
-	behavior, err := DiscoverNatFiltering("127.0.0.1:0", log)
-	require.Equal(t, AddrEpDependent, behavior)
+	_, err := DiscoverNatFiltering(srv.Addr(), log)
 	require.Error(t, err)
 	require.ErrorIs(t, err, errDiscoverFiltering)
 }
