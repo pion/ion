@@ -23,3 +23,10 @@ var errEmptyTLSCertKey = errors.New("tls cert or key is empty")
 var errInvalidTLSVersion = errors.New("invalid TLS version")
 
 var errInvalidPortRange = errors.New("invalid port range")
+
+var (
+	ErrNoLocalIPFound  = errors.New("no valid local ip address found")
+	errResponseMessage = errors.New("error reading from response message channel")
+	errTimedOut        = errors.New("timed out waiting for response")
+	errNoOtherAddress  = errors.New("no OTHER-ADDRESS in message")
+)
