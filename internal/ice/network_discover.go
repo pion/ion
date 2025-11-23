@@ -35,7 +35,7 @@ const (
 	NoNAT natBehavior = iota
 	EpIndependent
 	AddrDependent
-	AddrEpDependent
+	AddrPrtDependent
 )
 
 var (
@@ -91,12 +91,12 @@ func DiscoverNatMapping(stunAddr string, log *slog.Logger) (natBehavior, error) 
 		}
 	}()
 	if err != nil {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
 	}
 
 	localAddr, err := DiscoverLocalIP()
 	if err != nil {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
 	}
 
 	// Test I: Regular binding request
@@ -104,17 +104,17 @@ func DiscoverNatMapping(stunAddr string, log *slog.Logger) (natBehavior, error) 
 
 	resp, err := mapTestConn.roundTrip(request, mapTestConn.RemoteAddr, log)
 	if err != nil {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
 	}
 
 	// Parse response message for XOR-MAPPED-ADDRESS and make sure OTHER-ADDRESS valid
 	resps1 := parse(resp, log)
 	if resps1.xorAddr == nil || resps1.otherAddr == nil {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverMapping, errNoOtherAddress)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverMapping, errNoOtherAddress)
 	}
 	addr, err := net.ResolveUDPAddr("udp4", resps1.otherAddr.String())
 	if err != nil {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
 	}
 	mapTestConn.OtherAddr = addr
 	log.Debug("", "Received XOR-MAPPED-ADDRESS", resps1.xorAddr)
@@ -132,7 +132,7 @@ func DiscoverNatMapping(stunAddr string, log *slog.Logger) (natBehavior, error) 
 	oaddr.Port = mapTestConn.RemoteAddr.Port
 	resp, err = mapTestConn.roundTrip(request, &oaddr, log)
 	if err != nil {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
 	}
 
 	// Assert mapping behavior
@@ -148,7 +148,7 @@ func DiscoverNatMapping(stunAddr string, log *slog.Logger) (natBehavior, error) 
 	log.Debug("Mapping Test III: Send binding request to the other address and port")
 	resp, err = mapTestConn.roundTrip(request, mapTestConn.OtherAddr, log)
 	if err != nil {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverMapping, err)
 	}
 
 	// Assert mapping behavior
@@ -161,7 +161,7 @@ func DiscoverNatMapping(stunAddr string, log *slog.Logger) (natBehavior, error) 
 	} else {
 		log.Warn("NAT mapping behavior: address and port dependent")
 
-		return AddrEpDependent, nil
+		return AddrPrtDependent, nil
 	}
 }
 
@@ -182,7 +182,7 @@ func DiscoverNatFiltering(stunAddr string, log *slog.Logger) (natBehavior, error
 		}
 	}()
 	if err != nil {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, err)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, err)
 	}
 
 	// Test I: Regular binding request
@@ -191,15 +191,15 @@ func DiscoverNatFiltering(stunAddr string, log *slog.Logger) (natBehavior, error
 
 	resp, err := mapTestConn.roundTrip(request, mapTestConn.RemoteAddr, log)
 	if err != nil || errors.Is(err, errTimedOut) {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, err)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, err)
 	}
 	resps := parse(resp, log)
 	if resps.xorAddr == nil || resps.otherAddr == nil {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, errNoOtherAddress)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, errNoOtherAddress)
 	}
 	addr, err := net.ResolveUDPAddr("udp4", resps.otherAddr.String())
 	if err != nil {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, err)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, err)
 	}
 	mapTestConn.OtherAddr = addr
 
@@ -215,7 +215,7 @@ func DiscoverNatFiltering(stunAddr string, log *slog.Logger) (natBehavior, error
 
 		return EpIndependent, nil
 	} else if !errors.Is(err, errTimedOut) {
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, err) // something else went wrong
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, err) // something else went wrong
 	}
 
 	// Test III: Request to change port only
@@ -236,10 +236,10 @@ func DiscoverNatFiltering(stunAddr string, log *slog.Logger) (natBehavior, error
 		{
 			log.Warn("=> NAT filtering behavior: address and port dependent")
 
-			return AddrEpDependent, nil
+			return AddrPrtDependent, nil
 		}
 	default:
-		return AddrEpDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, err)
+		return AddrPrtDependent, fmt.Errorf("%w: %w", errDiscoverFiltering, err)
 	}
 }
 

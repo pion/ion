@@ -465,7 +465,7 @@ func TestDiscoverNatMapping_Dependent(t *testing.T) {
 	require.Equal(t, AddrDependent, behavior)
 	behavior, err2 = DiscoverNatMapping(srv.Addr(), log)
 	require.NoError(t, err2)
-	require.Equal(t, AddrEpDependent, behavior)
+	require.Equal(t, AddrPrtDependent, behavior)
 }
 
 func TestDiscoverNatMapping_MissingOtherAddress(t *testing.T) {
@@ -502,7 +502,7 @@ func TestDiscoverNatMapping_Timeout(t *testing.T) {
 	behavior, derr := DiscoverNatMapping(srv.Addr(), log)
 	elapsed := time.Since(start)
 
-	require.Equal(t, AddrEpDependent, behavior)
+	require.Equal(t, AddrPrtDependent, behavior)
 	require.Error(t, derr)
 	require.ErrorIs(t, derr, errTimedOut)
 	require.GreaterOrEqual(t, elapsed, defaultTimeout)
@@ -516,7 +516,7 @@ func TestDiscoverNatFiltering_ConnectError(t *testing.T) {
 	log := newTestLogger(t)
 
 	behavior, err := DiscoverNatFiltering("%invalid", log)
-	require.Equal(t, AddrEpDependent, behavior)
+	require.Equal(t, AddrPrtDependent, behavior)
 	require.Error(t, err)
 	require.ErrorIs(t, err, errDiscoverFiltering)
 }
@@ -629,7 +629,7 @@ func TestDiscoverNatFiltering_AddrEpDependent(t *testing.T) {
 	elapsed := time.Since(start)
 
 	require.NoError(t, err)
-	require.Equal(t, AddrEpDependent, behavior)
+	require.Equal(t, AddrPrtDependent, behavior)
 	require.GreaterOrEqual(t, elapsed, 2*defaultTimeout)
 }
 
