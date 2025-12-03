@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package sfu;
+
+option go_package = "github.com/pion/ion/internal/sfu;proto";
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+	string worker_id = 1;
+	bool ok = 2;
+}
+
+message CreateSessionRequest {
+	string session_id = 1;
+    string worker_id = 2;
+}
+
+message SessionDescription {
+  string type = 1; // "offer", "answer"
+  string role = 2; // "publisher", "subscriber"
+  string sdp  = 3;
+}
+
+message IceCandidate {
+  string role = 1; // "publisher", "subscriber"
+  string candidate          = 2;
+  string sdp_mid            = 3;
+  int32  sdp_mline_index    = 4;
+  string username_fragment  = 5;
+}
+
+message Join {
+	string session_id = 1;
+    string participant_id = 2;
+}
+
+message Leave {
+	string session_id = 1;
+    string participant_id = 2;
+}
+
+message SignalRequest {
+  string room_id        = 1;
+  string participant_id = 2;
+
+  oneof payload {
+    Join              join      = 3;
+    SessionDescription sdp      = 4;
+    IceCandidate      candidate = 5;
+    Leave             leave     = 6;
+  }
+}
+
+message SignalResponse {
+  string room_id        = 1;
+  string participant_id = 2;
+
+  oneof payload {
+    SessionDescription sdp      = 3;
+    IceCandidate      candidate = 4;
+  }
+}
+
+service SFUService {
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+	rpc Signal (stream SignalRequest) returns (stream SignalResponse);
+}

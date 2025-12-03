@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Ion SFU Loopback Demo</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 1rem;
+        }
+
+        #videos {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        video {
+            width: 320px;
+            height: 240px;
+            background: #000;
+        }
+
+        #log {
+            width: 100%;
+            height: 200px;
+            border: 1px solid #ccc;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        #chat {
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Ion SFU Loopback Demo</h1>
+
+    <button id="joinBtn">Join</button>
+    <span id="roomInfo"></span>
+
+    <div id="videos">
+        <div>
+            <h3>Local</h3>
+            <video id="localVideo" autoplay playsinline muted></video>
+        </div>
+        <div>
+            <h3>Remote</h3>
+            <video id="remoteVideo" autoplay playsinline></video>
+        </div>
+    </div>
+
+    <div id="chat">
+        <h3>DataChannel Chat</h3>
+        <input id="messageInput" type="text" placeholder="Type message" />
+        <button id="sendBtn">Send</button>
+    </div>
+
+    <h3>Log</h3>
+    <pre id="log"></pre>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
