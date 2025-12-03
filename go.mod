@@ -5,6 +5,7 @@ go 1.24.0
 toolchain go1.25.5
 
 require (
+	github.com/pion/stun/v3 v3.0.1
 	github.com/pion/turn/v4 v4.1.3
 	github.com/pion/webrtc/v4 v4.1.6
 	github.com/prometheus/client_golang v1.23.2
@@ -29,7 +30,6 @@ require (
 	github.com/pion/sctp v1.8.40 // indirect
 	github.com/pion/sdp/v3 v3.0.16 // indirect
 	github.com/pion/srtp/v3 v3.0.8 // indirect
-	github.com/pion/stun/v3 v3.0.1 // indirect
 	github.com/pion/transport/v3 v3.1.1 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/net v0.47.0 // indirect
