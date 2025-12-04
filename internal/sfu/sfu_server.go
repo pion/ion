@@ -80,14 +80,12 @@ func (s *SFUServer) Signal(stream proto.SFUService_SignalServer) error {
 		switch req.Payload.(type) {
 		case *proto.SignalRequest_Join:
 			logger.Debug("Join", "session_id", req.SessionId, "participant_id", req.ParticipantId)
-			peerId, err := handleJoin(s, req)
-			if err != nil {
-				return err
-			}
+			peer := NewLocalPeer(s.lf, req.SessionId, req.ParticipantId, sendCh, DefaultPeerLocalOptions())
+			s.SFU.addPeer(peer)
 			sendCh <- &proto.SignalResponse{
 				SessionId:     req.SessionId,
 				ParticipantId: req.ParticipantId,
-				PeerId:        peerId,
+				PeerId:        peer.ID(),
 			}
 
 			// peer.Publisher().pc.OnICECandidate(func(c *webrtc.ICECandidate) {
@@ -189,14 +187,15 @@ func (s *SFUServer) Signal(stream proto.SFUService_SignalServer) error {
 			peer.Close()
 			logger.Info("Leave", "peer_id", req.PeerId, "session_id", req.SessionId, "participant_id", req.ParticipantId)
 		case *proto.SignalRequest_Sdp:
-			logger.Info("SDP", "peer_id", req.PeerId, "session_id", req.SessionId, "participant_id", req.ParticipantId, "type", req.GetSdp().Type)
-			logger.Debug("SDP", "sdp", req.GetSdp().Sdp)
-
-			sdp := req.GetSdp()
 			peer, err := s.SFU.getPeer(req.PeerId)
 			if err != nil {
 				logger.Error("SDP", "peer_id", req.PeerId, "session_id", req.SessionId, "participant_id", req.ParticipantId, "error", err)
 			}
+
+			logger.Info("SDP", "peer_id", req.PeerId, "session_id", req.SessionId, "participant_id", req.ParticipantId, "type", req.GetSdp().Type)
+			logger.Debug("SDP", "sdp", req.GetSdp().Sdp)
+
+			sdp := req.GetSdp()
 
 			switch sdp.Type {
 			case "offer":
@@ -272,12 +271,6 @@ func candidateInitToProto(c webrtc.ICECandidateInit, t string) *proto.IceCandida
 		SdpMlineIndex:    mline,
 		UsernameFragment: ufrag,
 	}
-}
-
-func handleJoin(s *SFUServer, req *proto.SignalRequest) (string, error) {
-	peer := NewLocalPeer(req.SessionId, req.ParticipantId, DefaultPeerLocalOptions())
-	s.SFU.addPeer(peer)
-	return peer.ID(), nil
 }
 
 func handleSDPOffer(peer Peer, sdp *proto.SessionDescription) (*proto.SignalResponse, error) {

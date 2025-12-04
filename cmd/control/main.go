@@ -148,6 +148,13 @@ func SignalHandler(workerClient proto.SFUServiceClient) http.HandlerFunc {
 			return
 		}
 
+		resp, err := stream.Recv()
+		if err != nil {
+			log.Printf("Recv Join error: %v", err)
+			return
+		}
+		peerID := resp.PeerId
+
 		var sendMu sync.Mutex
 		sendWS := func(v any) error {
 			sendMu.Lock()
@@ -171,6 +178,7 @@ func SignalHandler(workerClient proto.SFUServiceClient) http.HandlerFunc {
 					req := &proto.SignalRequest{
 						SessionId:     roomID,
 						ParticipantId: participantID,
+						PeerId:        peerID,
 						Payload: &proto.SignalRequest_Sdp{
 							Sdp: &proto.SessionDescription{
 								Role: msg.Role,
@@ -196,6 +204,7 @@ func SignalHandler(workerClient proto.SFUServiceClient) http.HandlerFunc {
 					req := &proto.SignalRequest{
 						SessionId:     roomID,
 						ParticipantId: participantID,
+						PeerId:        peerID,
 						Payload: &proto.SignalRequest_Candidate{
 							Candidate: candidateJSONToProto(cj, msg.Role),
 						},

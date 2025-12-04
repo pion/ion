@@ -1,9 +1,12 @@
 package sfu
 
 import (
+	"log/slog"
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/pion/ion/v2/internal/logger"
+	"github.com/pion/ion/v2/internal/sfu/proto"
 )
 
 type Peer interface {
@@ -13,6 +16,8 @@ type Peer interface {
 
 	Publisher() *Publisher
 	Subscriber() *Subscriber
+	SignalWriteCh() chan *proto.SignalResponse
+	Logger() *slog.Logger
 
 	Close()
 }
@@ -26,6 +31,8 @@ type PeerLocal struct {
 
 	remoteAnswerPending bool
 	negotiationPending  bool
+	signalWriteCh       chan *proto.SignalResponse
+	logger              *slog.Logger
 
 	publisher  *Publisher
 	subscriber *Subscriber
@@ -35,19 +42,31 @@ type PeerLocalOptions func(*PeerLocal)
 
 func DefaultPeerLocalOptions() PeerLocalOptions {
 	return func(p *PeerLocal) {
-		p.publisher = NewPublisher(DefaultPublisherOptions())
+		p.publisher = NewPublisher(WithDefaultPublisherOptions())
+		p.publisher.InitalizeDefaultHandlers(p)
 		p.subscriber = NewSubscriber(DefaultSubscriberOptions())
 		p.remoteAnswerPending = false
 		p.negotiationPending = false
 	}
 }
 
-func NewLocalPeer(sessionID string, participantID string, opts ...PeerLocalOptions) *PeerLocal {
+func NewLocalPeer(lf *logger.LoggerFactory, sessionID string, participantID string, sigWriteCh chan *proto.SignalResponse, opts ...PeerLocalOptions) *PeerLocal {
+	peerID := uuid.New().String()
+
+	logger := lf.ForScope("peer").With(
+		"session_id", sessionID,
+		"participant_id", participantID,
+		"peer_id", peerID,
+	)
+	logger.Info("NewLocalPeer created")
+
 	peer := &PeerLocal{
-		id:            uuid.New().String(),
+		id:            peerID,
 		sessionID:     sessionID,
 		participantID: participantID,
 		closed:        false,
+		signalWriteCh: sigWriteCh,
+		logger:        logger,
 	}
 	for _, opt := range opts {
 		opt(peer)
@@ -81,4 +100,12 @@ func (p *PeerLocal) Subscriber() *Subscriber {
 
 func (p *PeerLocal) SessionID() string {
 	return p.sessionID
+}
+
+func (p *PeerLocal) SignalWriteCh() chan *proto.SignalResponse {
+	return p.signalWriteCh
+}
+
+func (p *PeerLocal) Logger() *slog.Logger {
+	return p.logger
 }
