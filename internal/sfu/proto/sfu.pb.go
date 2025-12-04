@@ -299,8 +299,6 @@ func (x *IceCandidate) GetUsernameFragment() string {
 
 type Join struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	ParticipantId string                 `protobuf:"bytes,2,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -335,23 +333,44 @@ func (*Join) Descriptor() ([]byte, []int) {
 	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *Join) GetSessionId() string {
-	if x != nil {
-		return x.SessionId
-	}
-	return ""
+type JoinResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Join) GetParticipantId() string {
+func (x *JoinResponse) Reset() {
+	*x = JoinResponse{}
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JoinResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JoinResponse) ProtoMessage() {}
+
+func (x *JoinResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[6]
 	if x != nil {
-		return x.ParticipantId
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
 	}
-	return ""
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JoinResponse.ProtoReflect.Descriptor instead.
+func (*JoinResponse) Descriptor() ([]byte, []int) {
+	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{6}
 }
 
 type Leave struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	ParticipantId string                 `protobuf:"bytes,2,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -359,7 +378,7 @@ type Leave struct {
 
 func (x *Leave) Reset() {
 	*x = Leave{}
-	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[6]
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -371,7 +390,7 @@ func (x *Leave) String() string {
 func (*Leave) ProtoMessage() {}
 
 func (x *Leave) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[6]
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -384,14 +403,7 @@ func (x *Leave) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Leave.ProtoReflect.Descriptor instead.
 func (*Leave) Descriptor() ([]byte, []int) {
-	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *Leave) GetSessionId() string {
-	if x != nil {
-		return x.SessionId
-	}
-	return ""
+	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Leave) GetParticipantId() string {
@@ -403,8 +415,9 @@ func (x *Leave) GetParticipantId() string {
 
 type SignalRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RoomId        string                 `protobuf:"bytes,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	ParticipantId string                 `protobuf:"bytes,2,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	PeerId        string                 `protobuf:"bytes,3,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*SignalRequest_Join
@@ -418,7 +431,7 @@ type SignalRequest struct {
 
 func (x *SignalRequest) Reset() {
 	*x = SignalRequest{}
-	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[7]
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -430,7 +443,7 @@ func (x *SignalRequest) String() string {
 func (*SignalRequest) ProtoMessage() {}
 
 func (x *SignalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[7]
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -443,12 +456,12 @@ func (x *SignalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalRequest.ProtoReflect.Descriptor instead.
 func (*SignalRequest) Descriptor() ([]byte, []int) {
-	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{7}
+	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *SignalRequest) GetRoomId() string {
+func (x *SignalRequest) GetSessionId() string {
 	if x != nil {
-		return x.RoomId
+		return x.SessionId
 	}
 	return ""
 }
@@ -456,6 +469,13 @@ func (x *SignalRequest) GetRoomId() string {
 func (x *SignalRequest) GetParticipantId() string {
 	if x != nil {
 		return x.ParticipantId
+	}
+	return ""
+}
+
+func (x *SignalRequest) GetPeerId() string {
+	if x != nil {
+		return x.PeerId
 	}
 	return ""
 }
@@ -508,19 +528,19 @@ type isSignalRequest_Payload interface {
 }
 
 type SignalRequest_Join struct {
-	Join *Join `protobuf:"bytes,3,opt,name=join,proto3,oneof"`
+	Join *Join `protobuf:"bytes,4,opt,name=join,proto3,oneof"`
 }
 
 type SignalRequest_Sdp struct {
-	Sdp *SessionDescription `protobuf:"bytes,4,opt,name=sdp,proto3,oneof"`
+	Sdp *SessionDescription `protobuf:"bytes,5,opt,name=sdp,proto3,oneof"`
 }
 
 type SignalRequest_Candidate struct {
-	Candidate *IceCandidate `protobuf:"bytes,5,opt,name=candidate,proto3,oneof"`
+	Candidate *IceCandidate `protobuf:"bytes,6,opt,name=candidate,proto3,oneof"`
 }
 
 type SignalRequest_Leave struct {
-	Leave *Leave `protobuf:"bytes,6,opt,name=leave,proto3,oneof"`
+	Leave *Leave `protobuf:"bytes,7,opt,name=leave,proto3,oneof"`
 }
 
 func (*SignalRequest_Join) isSignalRequest_Payload() {}
@@ -533,8 +553,9 @@ func (*SignalRequest_Leave) isSignalRequest_Payload() {}
 
 type SignalResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RoomId        string                 `protobuf:"bytes,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	ParticipantId string                 `protobuf:"bytes,2,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	PeerId        string                 `protobuf:"bytes,3,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*SignalResponse_Sdp
@@ -546,7 +567,7 @@ type SignalResponse struct {
 
 func (x *SignalResponse) Reset() {
 	*x = SignalResponse{}
-	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[8]
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -558,7 +579,7 @@ func (x *SignalResponse) String() string {
 func (*SignalResponse) ProtoMessage() {}
 
 func (x *SignalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[8]
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -571,12 +592,12 @@ func (x *SignalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalResponse.ProtoReflect.Descriptor instead.
 func (*SignalResponse) Descriptor() ([]byte, []int) {
-	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{8}
+	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *SignalResponse) GetRoomId() string {
+func (x *SignalResponse) GetSessionId() string {
 	if x != nil {
-		return x.RoomId
+		return x.SessionId
 	}
 	return ""
 }
@@ -584,6 +605,13 @@ func (x *SignalResponse) GetRoomId() string {
 func (x *SignalResponse) GetParticipantId() string {
 	if x != nil {
 		return x.ParticipantId
+	}
+	return ""
+}
+
+func (x *SignalResponse) GetPeerId() string {
+	if x != nil {
+		return x.PeerId
 	}
 	return ""
 }
@@ -618,11 +646,11 @@ type isSignalResponse_Payload interface {
 }
 
 type SignalResponse_Sdp struct {
-	Sdp *SessionDescription `protobuf:"bytes,3,opt,name=sdp,proto3,oneof"`
+	Sdp *SessionDescription `protobuf:"bytes,4,opt,name=sdp,proto3,oneof"`
 }
 
 type SignalResponse_Candidate struct {
-	Candidate *IceCandidate `protobuf:"bytes,4,opt,name=candidate,proto3,oneof"`
+	Candidate *IceCandidate `protobuf:"bytes,5,opt,name=candidate,proto3,oneof"`
 }
 
 func (*SignalResponse_Sdp) isSignalResponse_Payload() {}
@@ -651,29 +679,29 @@ const file_internal_sfu_proto_sfu_proto_rawDesc = "" +
 	"\tcandidate\x18\x02 \x01(\tR\tcandidate\x12\x17\n" +
 	"\asdp_mid\x18\x03 \x01(\tR\x06sdpMid\x12&\n" +
 	"\x0fsdp_mline_index\x18\x04 \x01(\x05R\rsdpMlineIndex\x12+\n" +
-	"\x11username_fragment\x18\x05 \x01(\tR\x10usernameFragment\"L\n" +
-	"\x04Join\x12\x1d\n" +
+	"\x11username_fragment\x18\x05 \x01(\tR\x10usernameFragment\"\x06\n" +
+	"\x04Join\"\x0e\n" +
+	"\fJoinResponse\".\n" +
+	"\x05Leave\x12%\n" +
+	"\x0eparticipant_id\x18\x02 \x01(\tR\rparticipantId\"\x9e\x02\n" +
+	"\rSignalRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12%\n" +
-	"\x0eparticipant_id\x18\x02 \x01(\tR\rparticipantId\"M\n" +
-	"\x05Leave\x12\x1d\n" +
-	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12%\n" +
-	"\x0eparticipant_id\x18\x02 \x01(\tR\rparticipantId\"\xff\x01\n" +
-	"\rSignalRequest\x12\x17\n" +
-	"\aroom_id\x18\x01 \x01(\tR\x06roomId\x12%\n" +
-	"\x0eparticipant_id\x18\x02 \x01(\tR\rparticipantId\x12\x1f\n" +
-	"\x04join\x18\x03 \x01(\v2\t.sfu.JoinH\x00R\x04join\x12+\n" +
-	"\x03sdp\x18\x04 \x01(\v2\x17.sfu.SessionDescriptionH\x00R\x03sdp\x121\n" +
-	"\tcandidate\x18\x05 \x01(\v2\x11.sfu.IceCandidateH\x00R\tcandidate\x12\"\n" +
-	"\x05leave\x18\x06 \x01(\v2\n" +
+	"\x0eparticipant_id\x18\x02 \x01(\tR\rparticipantId\x12\x17\n" +
+	"\apeer_id\x18\x03 \x01(\tR\x06peerId\x12\x1f\n" +
+	"\x04join\x18\x04 \x01(\v2\t.sfu.JoinH\x00R\x04join\x12+\n" +
+	"\x03sdp\x18\x05 \x01(\v2\x17.sfu.SessionDescriptionH\x00R\x03sdp\x121\n" +
+	"\tcandidate\x18\x06 \x01(\v2\x11.sfu.IceCandidateH\x00R\tcandidate\x12\"\n" +
+	"\x05leave\x18\a \x01(\v2\n" +
 	".sfu.LeaveH\x00R\x05leaveB\t\n" +
-	"\apayload\"\xbb\x01\n" +
-	"\x0eSignalResponse\x12\x17\n" +
-	"\aroom_id\x18\x01 \x01(\tR\x06roomId\x12%\n" +
-	"\x0eparticipant_id\x18\x02 \x01(\tR\rparticipantId\x12+\n" +
-	"\x03sdp\x18\x03 \x01(\v2\x17.sfu.SessionDescriptionH\x00R\x03sdp\x121\n" +
-	"\tcandidate\x18\x04 \x01(\v2\x11.sfu.IceCandidateH\x00R\tcandidateB\t\n" +
+	"\apayload\"\xda\x01\n" +
+	"\x0eSignalResponse\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12%\n" +
+	"\x0eparticipant_id\x18\x02 \x01(\tR\rparticipantId\x12\x17\n" +
+	"\apeer_id\x18\x03 \x01(\tR\x06peerId\x12+\n" +
+	"\x03sdp\x18\x04 \x01(\v2\x17.sfu.SessionDescriptionH\x00R\x03sdp\x121\n" +
+	"\tcandidate\x18\x05 \x01(\v2\x11.sfu.IceCandidateH\x00R\tcandidateB\t\n" +
 	"\apayload2\x85\x01\n" +
 	"\n" +
 	"SFUService\x12@\n" +
@@ -692,7 +720,7 @@ func file_internal_sfu_proto_sfu_proto_rawDescGZIP() []byte {
 	return file_internal_sfu_proto_sfu_proto_rawDescData
 }
 
-var file_internal_sfu_proto_sfu_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_internal_sfu_proto_sfu_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_internal_sfu_proto_sfu_proto_goTypes = []any{
 	(*HealthCheckRequest)(nil),   // 0: sfu.HealthCheckRequest
 	(*HealthCheckResponse)(nil),  // 1: sfu.HealthCheckResponse
@@ -700,21 +728,22 @@ var file_internal_sfu_proto_sfu_proto_goTypes = []any{
 	(*SessionDescription)(nil),   // 3: sfu.SessionDescription
 	(*IceCandidate)(nil),         // 4: sfu.IceCandidate
 	(*Join)(nil),                 // 5: sfu.Join
-	(*Leave)(nil),                // 6: sfu.Leave
-	(*SignalRequest)(nil),        // 7: sfu.SignalRequest
-	(*SignalResponse)(nil),       // 8: sfu.SignalResponse
+	(*JoinResponse)(nil),         // 6: sfu.JoinResponse
+	(*Leave)(nil),                // 7: sfu.Leave
+	(*SignalRequest)(nil),        // 8: sfu.SignalRequest
+	(*SignalResponse)(nil),       // 9: sfu.SignalResponse
 }
 var file_internal_sfu_proto_sfu_proto_depIdxs = []int32{
 	5, // 0: sfu.SignalRequest.join:type_name -> sfu.Join
 	3, // 1: sfu.SignalRequest.sdp:type_name -> sfu.SessionDescription
 	4, // 2: sfu.SignalRequest.candidate:type_name -> sfu.IceCandidate
-	6, // 3: sfu.SignalRequest.leave:type_name -> sfu.Leave
+	7, // 3: sfu.SignalRequest.leave:type_name -> sfu.Leave
 	3, // 4: sfu.SignalResponse.sdp:type_name -> sfu.SessionDescription
 	4, // 5: sfu.SignalResponse.candidate:type_name -> sfu.IceCandidate
 	0, // 6: sfu.SFUService.HealthCheck:input_type -> sfu.HealthCheckRequest
-	7, // 7: sfu.SFUService.Signal:input_type -> sfu.SignalRequest
+	8, // 7: sfu.SFUService.Signal:input_type -> sfu.SignalRequest
 	1, // 8: sfu.SFUService.HealthCheck:output_type -> sfu.HealthCheckResponse
-	8, // 9: sfu.SFUService.Signal:output_type -> sfu.SignalResponse
+	9, // 9: sfu.SFUService.Signal:output_type -> sfu.SignalResponse
 	8, // [8:10] is the sub-list for method output_type
 	6, // [6:8] is the sub-list for method input_type
 	6, // [6:6] is the sub-list for extension type_name
@@ -727,13 +756,13 @@ func file_internal_sfu_proto_sfu_proto_init() {
 	if File_internal_sfu_proto_sfu_proto != nil {
 		return
 	}
-	file_internal_sfu_proto_sfu_proto_msgTypes[7].OneofWrappers = []any{
+	file_internal_sfu_proto_sfu_proto_msgTypes[8].OneofWrappers = []any{
 		(*SignalRequest_Join)(nil),
 		(*SignalRequest_Sdp)(nil),
 		(*SignalRequest_Candidate)(nil),
 		(*SignalRequest_Leave)(nil),
 	}
-	file_internal_sfu_proto_sfu_proto_msgTypes[8].OneofWrappers = []any{
+	file_internal_sfu_proto_sfu_proto_msgTypes[9].OneofWrappers = []any{
 		(*SignalResponse_Sdp)(nil),
 		(*SignalResponse_Candidate)(nil),
 	}
@@ -743,7 +772,7 @@ func file_internal_sfu_proto_sfu_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_sfu_proto_sfu_proto_rawDesc), len(file_internal_sfu_proto_sfu_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

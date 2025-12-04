@@ -31,34 +31,36 @@ message IceCandidate {
 }
 
 message Join {
-	string session_id = 1;
-    string participant_id = 2;
+}
+
+message JoinResponse {
 }
 
 message Leave {
-	string session_id = 1;
-    string participant_id = 2;
+  string participant_id = 2;
 }
 
 message SignalRequest {
-  string room_id        = 1;
+  string session_id        = 1;
   string participant_id = 2;
+  string peer_id = 3;
 
   oneof payload {
-    Join              join      = 3;
-    SessionDescription sdp      = 4;
-    IceCandidate      candidate = 5;
-    Leave             leave     = 6;
+    Join              join      = 4;
+    SessionDescription sdp      = 5;
+    IceCandidate      candidate = 6;
+    Leave             leave     = 7;
   }
 }
 
 message SignalResponse {
-  string room_id        = 1;
+  string session_id        = 1;
   string participant_id = 2;
+  string peer_id = 3;
 
   oneof payload {
-    SessionDescription sdp      = 3;
-    IceCandidate      candidate = 4;
+    SessionDescription sdp      = 4;
+    IceCandidate      candidate = 5;
   }
 }
 

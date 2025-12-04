@@ -6,6 +6,8 @@ import (
 	"log"
 	"net"
 
+	"github.com/pion/ion/v2/internal/config"
+	"github.com/pion/ion/v2/internal/logger"
 	"github.com/pion/ion/v2/internal/sfu"
 	"github.com/pion/ion/v2/internal/sfu/proto"
 
@@ -27,13 +29,26 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	srv := sfu.NewSFUServer()
+	lf, err := logger.NewLoggerFactory(logger.Options{
+		DefaultWriter: config.WriterStderr,
+		Format:        config.LogFormatText,
+		ScopeLevels: map[string]string{
+			"sfu":    "debug",
+			"signal": "error",
+		},
+		DefaultLevel: "debug",
+	})
+	logger := lf.ForScope("sfu-main")
+	if err != nil {
+		panic(err)
+	}
+	srv := sfu.NewSFUServer(lf)
 	proto.RegisterSFUServiceServer(s, srv)
 	reflection.Register(s)
 
-	log.Printf("Worker %s listening on %s (public: %s)", *workerID, lis.Addr(), *publicAddress)
+	logger.Info("sfu worker running", "workerID", *workerID, "addr", lis.Addr(), "publicAddress", *publicAddress)
 
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		logger.Error("failed to serve", "err", err)
 	}
 }

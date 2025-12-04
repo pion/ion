@@ -139,6 +139,15 @@ func (f *LoggerFactory) FromCtx(ctx context.Context) *slog.Logger {
 	return f.rootLogger
 }
 
+// ForScope returns a logger for a specific scope. It is a helper
+// for functions without context.
+func (f *LoggerFactory) ForScope(scope string) *slog.Logger {
+	return slog.New(&ctxHandler{
+		next:  f.newHandler(scope),
+		scope: scope,
+	})
+}
+
 // RetriveLoggerfromCtx retrieves the logger associated with ctx
 // or returns nil.
 func retriveLoggerfromCtx(ctx context.Context) *slog.Logger {

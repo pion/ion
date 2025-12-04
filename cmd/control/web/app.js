@@ -95,6 +95,7 @@ function createPeerConnections() {
     pcSub.ontrack = (event) => {
         log("pcSub received remote track: kind=" + event.track.kind +
             " streams=" + event.streams.length);
+
         if (event.streams && event.streams[0]) {
             remoteVideo.srcObject = event.streams[0];
         } else {
@@ -103,10 +104,17 @@ function createPeerConnections() {
             }
             remoteVideo.srcObject.addTrack(event.track);
         }
-        remoteVideo.play().catch(() => {
-            log("Remote video play() blocked by browser; user interaction may be required.");
-        });
+
+        // make sure it's muted before trying to play
+        remoteVideo.muted = true;
+
+        if (remoteVideo.paused) {
+            remoteVideo.play().catch((err) => {
+                log("Remote video play() failed: " + err.name + " " + err.message);
+            });
+        }
     };
+
 
     // DataChannel on publisher PC
     dc = pcPub.createDataChannel("echo");

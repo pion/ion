@@ -4,12 +4,12 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/pion/webrtc/v4"
 )
 
 type Peer interface {
 	ID() string
 	ParticipantID() string
+	SessionID() string
 
 	Publisher() *Publisher
 	Subscriber() *Subscriber
@@ -31,25 +31,28 @@ type PeerLocal struct {
 	subscriber *Subscriber
 }
 
-func NewLocalPeer(sessionID string, participantID string) *PeerLocal {
-	pcPub, err := webrtc.NewPeerConnection(webrtc.Configuration{})
-	if err != nil {
-		return nil
+type PeerLocalOptions func(*PeerLocal)
+
+func DefaultPeerLocalOptions() PeerLocalOptions {
+	return func(p *PeerLocal) {
+		p.publisher = NewPublisher(DefaultPublisherOptions())
+		p.subscriber = NewSubscriber(DefaultSubscriberOptions())
+		p.remoteAnswerPending = false
+		p.negotiationPending = false
 	}
-	pcSub, err := webrtc.NewPeerConnection(webrtc.Configuration{})
-	if err != nil {
-		return nil
+}
+
+func NewLocalPeer(sessionID string, participantID string, opts ...PeerLocalOptions) *PeerLocal {
+	peer := &PeerLocal{
+		id:            uuid.New().String(),
+		sessionID:     sessionID,
+		participantID: participantID,
+		closed:        false,
 	}
-	id := uuid.New().String()
-	return &PeerLocal{
-		id:                  id,
-		sessionID:           sessionID,
-		participantID:       participantID,
-		remoteAnswerPending: false,
-		negotiationPending:  false,
-		publisher:           NewPublisher(id, pcPub),
-		subscriber:          NewSubscriber(id, pcSub),
+	for _, opt := range opts {
+		opt(peer)
 	}
+	return peer
 }
 
 func (p *PeerLocal) ID() string {
@@ -74,4 +77,8 @@ func (p *PeerLocal) Publisher() *Publisher {
 
 func (p *PeerLocal) Subscriber() *Subscriber {
 	return p.subscriber
+}
+
+func (p *PeerLocal) SessionID() string {
+	return p.sessionID
 }

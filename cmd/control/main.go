@@ -140,7 +140,7 @@ func SignalHandler(workerClient proto.SFUServiceClient) http.HandlerFunc {
 
 		// First message: Join
 		if err := stream.Send(&proto.SignalRequest{
-			RoomId:        roomID,
+			SessionId:     roomID,
 			ParticipantId: participantID,
 			Payload:       &proto.SignalRequest_Join{Join: &proto.Join{}},
 		}); err != nil {
@@ -169,7 +169,7 @@ func SignalHandler(workerClient proto.SFUServiceClient) http.HandlerFunc {
 				switch msg.Type {
 				case "offer", "answer":
 					req := &proto.SignalRequest{
-						RoomId:        roomID,
+						SessionId:     roomID,
 						ParticipantId: participantID,
 						Payload: &proto.SignalRequest_Sdp{
 							Sdp: &proto.SessionDescription{
@@ -194,7 +194,7 @@ func SignalHandler(workerClient proto.SFUServiceClient) http.HandlerFunc {
 						continue
 					}
 					req := &proto.SignalRequest{
-						RoomId:        roomID,
+						SessionId:     roomID,
 						ParticipantId: participantID,
 						Payload: &proto.SignalRequest_Candidate{
 							Candidate: candidateJSONToProto(cj, msg.Role),
@@ -256,7 +256,7 @@ func SignalHandler(workerClient proto.SFUServiceClient) http.HandlerFunc {
 		case err := <-wsErrCh:
 			log.Printf("WS closed room=%s participant=%s: %v", roomID, participantID, err)
 			_ = stream.Send(&proto.SignalRequest{
-				RoomId:        roomID,
+				SessionId:     roomID,
 				ParticipantId: participantID,
 				Payload:       &proto.SignalRequest_Leave{Leave: &proto.Leave{}},
 			})
