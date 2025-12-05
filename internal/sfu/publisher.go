@@ -1,6 +1,7 @@
 package sfu
 
 import (
+	"sync"
 	"sync/atomic"
 
 	"github.com/pion/ion/v2/internal/sfu/proto"
@@ -12,6 +13,9 @@ type Publisher struct {
 	onICECandidate          atomic.Value
 	onConnectionStateChange atomic.Value
 	onTrack                 atomic.Value
+	mu                      sync.RWMutex
+
+	tracks map[string]*webrtc.TrackRemote
 }
 
 type PublisherOptions func(*Publisher)
@@ -70,12 +74,15 @@ func (p *Publisher) InitalizeDefaultHandlers(peer Peer) {
 		peer.Logger().Info("Publisher connection state change", "state", state)
 	})
 	p.SetOnTrackHandler(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-		peer.Logger().Info("Publisher track added", "track_id", track.ID())
+		peer.Logger().Info("Publisher track added", "track_id", track.ID(), "kind", track.Kind())
+		p.AddTrack(track)
 	})
 }
 
 func NewPublisher(opts ...PublisherOptions) *Publisher {
-	publisher := &Publisher{}
+	publisher := &Publisher{
+		tracks: make(map[string]*webrtc.TrackRemote),
+	}
 	for _, opt := range opts {
 		opt(publisher)
 	}
@@ -84,4 +91,16 @@ func NewPublisher(opts ...PublisherOptions) *Publisher {
 
 func (p *Publisher) Close() {
 	p.pc.Close()
+}
+
+func (p *Publisher) GetTracks() map[string]*webrtc.TrackRemote {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.tracks
+}
+
+func (p *Publisher) AddTrack(track *webrtc.TrackRemote) {
+	p.mu.Lock()
+	p.tracks[track.ID()] = track
+	p.mu.Unlock()
 }
