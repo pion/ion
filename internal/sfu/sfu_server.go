@@ -25,7 +25,8 @@ type SFUServer struct {
 func NewSFUServer(lf *logger.LoggerFactory) *SFUServer {
 	return &SFUServer{
 		SFU: &SFU{
-			peers: make(map[string]Peer),
+			sessionRouters: make(map[string]*sessionRouter),
+			peers:          make(map[string]Peer),
 		},
 		lf: lf,
 	}
@@ -87,98 +88,8 @@ func (s *SFUServer) Signal(stream proto.SFUService_SignalServer) error {
 				ParticipantId: req.ParticipantId,
 				PeerId:        peer.ID(),
 			}
-
-			// peer.Publisher().pc.OnICECandidate(func(c *webrtc.ICECandidate) {
-			// 	if c == nil {
-			// 		return
-			// 	}
-			// 	resp := &proto.SignalResponse{
-			// 		RoomId:        peer.sessionID,
-			// 		ParticipantId: peer.participantID,
-			// 		Payload: &proto.SignalResponse_Candidate{
-			// 			Candidate: candidateInitToProto(c.ToJSON(), "publisher"),
-			// 		},
-			// 	}
-			// 	stream.Send(resp)
-			// })
-			// peer.Publisher().pc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-			// 	log.Println(state)
-			// })
-			// peer.publisher.pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-			// 	localTrack, err := webrtc.NewTrackLocalStaticRTP(
-			// 		track.Codec().RTPCodecCapability,
-			// 		track.ID(),       // reuse ID for simplicity
-			// 		track.StreamID(), // reuse stream ID
-			// 	)
-			// 	if err != nil {
-			// 		log.Printf("NewTrackLocalStaticRTP: %v", err)
-			// 		return
-			// 	}
-			// 	sender, err := peer.subscriber.pc.AddTrack(localTrack)
-			// 	if err != nil {
-			// 		log.Printf("subPC.AddTrack error: %v", err)
-			// 		return
-			// 	}
-			// 	go func() {
-			// 		buf := make([]byte, 1500)
-			// 		for {
-			// 			if _, _, err := sender.Read(buf); err != nil {
-			// 				log.Printf("subscriber sender RTCP read error: %v", err)
-			// 				return
-			// 			}
-			// 		}
-			// 	}()
-			// 	go func() {
-			// 		buf := make([]byte, 1500)
-			// 		for {
-			// 			n, _, err := track.Read(buf)
-			// 			if err != nil {
-			// 				log.Printf("remote track read error: %v", err)
-			// 				return
-			// 			}
-
-			// 			if _, writeErr := localTrack.Write(buf[:n]); writeErr != nil {
-			// 				log.Printf("localTrack.Write error: %v", writeErr)
-			// 				return
-			// 			}
-			// 		}
-			// 	}()
-			// 	go func() {
-			// 		for peer.subscriber.pc.SignalingState() != webrtc.SignalingStateStable {
-			// 			time.Sleep(100 * time.Millisecond)
-			// 			log.Printf("subPC renegotiation skipped; signaling state = %s", peer.subscriber.pc.SignalingState())
-			// 		}
-			// 		offer, err := peer.subscriber.pc.CreateOffer(nil)
-			// 		if err != nil {
-			// 			log.Printf("subPC.CreateOffer error: %v", err)
-			// 			return
-			// 		}
-			// 		if err := peer.subscriber.pc.SetLocalDescription(offer); err != nil {
-			// 			log.Printf("subPC.SetLocalDescription error: %v", err)
-			// 			return
-			// 		}
-
-			// 		// Send this offer to the client (subscriber PC).
-			// 		// You’ll need a way to distinguish “subscriber” vs “publisher” SDP in your proto.
-			// 		resp := &proto.SignalResponse{
-			// 			RoomId:        peer.sessionID,
-			// 			ParticipantId: peer.participantID,
-			// 			Payload: &proto.SignalResponse_Sdp{
-			// 				Sdp: &proto.SessionDescription{
-			// 					Role: "subscriber",
-			// 					Type: "offer",
-			// 					Sdp:  offer.SDP,
-			// 				},
-			// 			},
-			// 		}
-			// 		err = stream.Send(resp)
-			// 		if err != nil {
-			// 			log.Printf("stream.Send error: %v", err)
-			// 			return
-			// 		}
-			// 	}()
-			// })
-			// s.SFU.peers[peer.ID()] = peer
+			s.SFU.sessionRouters[req.SessionId] = newSessionRouter(req.SessionId, logger.With("session_id", req.SessionId))
+			peer.Subscriber().Renegotiate(peer)
 		case *proto.SignalRequest_Leave:
 			peer, err := s.SFU.getPeer(req.PeerId)
 			if err != nil {
@@ -196,7 +107,6 @@ func (s *SFUServer) Signal(stream proto.SFUService_SignalServer) error {
 			logger.Debug("SDP", "sdp", req.GetSdp().Sdp)
 
 			sdp := req.GetSdp()
-
 			switch sdp.Type {
 			case "offer":
 				resp, err := handleSDPOffer(peer, sdp)
@@ -205,14 +115,54 @@ func (s *SFUServer) Signal(stream proto.SFUService_SignalServer) error {
 				}
 				sendCh <- resp
 			case "answer":
-				err := peer.Subscriber().pc.SetRemoteDescription(webrtc.SessionDescription{
-					Type: webrtc.SDPTypeAnswer,
-					SDP:  sdp.Sdp,
-				})
-				if err != nil {
-					logger.Error("subPC.SetRemoteDescription(answer)", "error", err)
+				if sdp.Role == "subscriber" {
+					logger.Info("Subscriber answer", "peer_id", req.PeerId, "session_id", req.SessionId, "participant_id", req.ParticipantId)
+					err := peer.Subscriber().pc.SetRemoteDescription(webrtc.SessionDescription{
+						Type: webrtc.SDPTypeAnswer,
+						SDP:  sdp.Sdp,
+					})
+					if err != nil {
+						logger.Error("subPC.SetRemoteDescription(answer)", "error", err)
+					}
+					if peer.Subscriber().negotiationNeeded.Load() {
+						peer.Subscriber().negotiationNeeded.Store(false)
+						peer.Subscriber().Renegotiate(peer)
+					}
+				} else if sdp.Role == "publisher" {
+					err := peer.Publisher().pc.SetRemoteDescription(webrtc.SessionDescription{
+						Type: webrtc.SDPTypeAnswer,
+						SDP:  sdp.Sdp,
+					})
+					if err != nil {
+						logger.Error("pubPC.SetRemoteDescription(answer)", "error", err)
+					}
 				}
 			}
+		case *proto.SignalRequest_Subscribe:
+			logger.Info("Subscribe", "peer_id", req.PeerId, "session_id", req.SessionId, "pub_peer_id", req.GetSubscribe().PeerId)
+			peer, err := s.SFU.getPeer(req.PeerId)
+			if err != nil {
+				logger.Error("Subscribe", "peer_id", req.PeerId, "session_id", req.SessionId, "participant_id", req.ParticipantId, "error", err)
+			}
+			sessionRouter, err := s.SFU.getSessionRouter(req.SessionId)
+			if err != nil {
+				logger.Error("Subscribe", "session_id", req.SessionId, "error", err)
+			}
+
+			pubPeer, err := s.SFU.getPeer(req.GetSubscribe().PeerId)
+			if err != nil {
+				logger.Error("Subscribe", "peer_id", req.GetSubscribe().PeerId, "session_id", req.SessionId, "participant_id", req.ParticipantId, "error", err)
+			}
+			tracks := pubPeer.Publisher().GetTracks()
+			trackIDs := make([]string, 0)
+			for _, track := range tracks {
+				trackIDs = append(trackIDs, track.ID())
+			}
+			sessionRouter.Subscribe(peer, &Subscription{
+				PubPeer:  pubPeer,
+				TrackIDs: trackIDs,
+			})
+
 		case *proto.SignalRequest_Candidate:
 			logger.Info("Candidate", "peer_id", req.PeerId, "session_id", req.SessionId, "participant_id", req.ParticipantId)
 			cand := req.GetCandidate()

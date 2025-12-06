@@ -44,7 +44,8 @@ func DefaultPeerLocalOptions() PeerLocalOptions {
 	return func(p *PeerLocal) {
 		p.publisher = NewPublisher(WithDefaultPublisherOptions())
 		p.publisher.InitalizeDefaultHandlers(p)
-		p.subscriber = NewSubscriber(DefaultSubscriberOptions())
+		p.subscriber = NewSubscriber(WithDefaultSubscriberOptions())
+		p.subscriber.InitalizeDefaultHandlers(p)
 		p.remoteAnswerPending = false
 		p.negotiationPending = false
 	}

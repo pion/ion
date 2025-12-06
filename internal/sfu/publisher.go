@@ -15,7 +15,8 @@ type Publisher struct {
 	onTrack                 atomic.Value
 	mu                      sync.RWMutex
 
-	tracks map[string]*webrtc.TrackRemote
+	tracks    map[string]*webrtc.TrackRemote
+	receivers map[string]*webrtc.RTPReceiver
 }
 
 type PublisherOptions func(*Publisher)
@@ -102,5 +103,12 @@ func (p *Publisher) GetTracks() map[string]*webrtc.TrackRemote {
 func (p *Publisher) AddTrack(track *webrtc.TrackRemote) {
 	p.mu.Lock()
 	p.tracks[track.ID()] = track
+	p.mu.Unlock()
+}
+
+func (p *Publisher) AddReceiver(receiver *webrtc.RTPReceiver) {
+	p.mu.Lock()
+	receiver.ReadRTCP()
+	p.receivers[receiver.Track().ID()] = receiver
 	p.mu.Unlock()
 }

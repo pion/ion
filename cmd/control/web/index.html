@@ -36,6 +36,24 @@
             margin-top: 1rem;
             display: none;
         }
+
+        #controls {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+        }
+
+        #controls h3 {
+            margin-top: 0;
+        }
+
+        #controls label {
+            margin-right: 0.5rem;
+        }
+
+        #controls input {
+            min-width: 200px;
+        }
     </style>
 </head>
 
@@ -44,6 +62,19 @@
 
     <button id="joinBtn">Join</button>
     <span id="roomInfo"></span>
+
+    <!-- NEW: router / subscription test controls -->
+    <div id="controls">
+        <h3>Router / Subscription Test</h3>
+
+        <button id="toggleTrackBtn">Add Track(s)</button>
+
+        <div style="margin-top: 0.5rem;">
+            <label for="subscribePeerId">Subscribe to publisher peer ID:</label>
+            <input id="subscribePeerId" type="text" placeholder="peer-id (e.g. another participant)" />
+            <button id="subscribeBtn">Subscribe</button>
+        </div>
+    </div>
 
     <div id="videos">
         <div>

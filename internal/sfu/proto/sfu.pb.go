@@ -413,6 +413,50 @@ func (x *Leave) GetParticipantId() string {
 	return ""
 }
 
+type Subscribe struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PeerId        string                 `protobuf:"bytes,1,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Subscribe) Reset() {
+	*x = Subscribe{}
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Subscribe) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Subscribe) ProtoMessage() {}
+
+func (x *Subscribe) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Subscribe.ProtoReflect.Descriptor instead.
+func (*Subscribe) Descriptor() ([]byte, []int) {
+	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *Subscribe) GetPeerId() string {
+	if x != nil {
+		return x.PeerId
+	}
+	return ""
+}
+
 type SignalRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -424,6 +468,7 @@ type SignalRequest struct {
 	//	*SignalRequest_Sdp
 	//	*SignalRequest_Candidate
 	//	*SignalRequest_Leave
+	//	*SignalRequest_Subscribe
 	Payload       isSignalRequest_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -431,7 +476,7 @@ type SignalRequest struct {
 
 func (x *SignalRequest) Reset() {
 	*x = SignalRequest{}
-	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[8]
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -443,7 +488,7 @@ func (x *SignalRequest) String() string {
 func (*SignalRequest) ProtoMessage() {}
 
 func (x *SignalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[8]
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -456,7 +501,7 @@ func (x *SignalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalRequest.ProtoReflect.Descriptor instead.
 func (*SignalRequest) Descriptor() ([]byte, []int) {
-	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{8}
+	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SignalRequest) GetSessionId() string {
@@ -523,6 +568,15 @@ func (x *SignalRequest) GetLeave() *Leave {
 	return nil
 }
 
+func (x *SignalRequest) GetSubscribe() *Subscribe {
+	if x != nil {
+		if x, ok := x.Payload.(*SignalRequest_Subscribe); ok {
+			return x.Subscribe
+		}
+	}
+	return nil
+}
+
 type isSignalRequest_Payload interface {
 	isSignalRequest_Payload()
 }
@@ -543,6 +597,10 @@ type SignalRequest_Leave struct {
 	Leave *Leave `protobuf:"bytes,7,opt,name=leave,proto3,oneof"`
 }
 
+type SignalRequest_Subscribe struct {
+	Subscribe *Subscribe `protobuf:"bytes,8,opt,name=subscribe,proto3,oneof"`
+}
+
 func (*SignalRequest_Join) isSignalRequest_Payload() {}
 
 func (*SignalRequest_Sdp) isSignalRequest_Payload() {}
@@ -550,6 +608,8 @@ func (*SignalRequest_Sdp) isSignalRequest_Payload() {}
 func (*SignalRequest_Candidate) isSignalRequest_Payload() {}
 
 func (*SignalRequest_Leave) isSignalRequest_Payload() {}
+
+func (*SignalRequest_Subscribe) isSignalRequest_Payload() {}
 
 type SignalResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -567,7 +627,7 @@ type SignalResponse struct {
 
 func (x *SignalResponse) Reset() {
 	*x = SignalResponse{}
-	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[9]
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -579,7 +639,7 @@ func (x *SignalResponse) String() string {
 func (*SignalResponse) ProtoMessage() {}
 
 func (x *SignalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[9]
+	mi := &file_internal_sfu_proto_sfu_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -592,7 +652,7 @@ func (x *SignalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalResponse.ProtoReflect.Descriptor instead.
 func (*SignalResponse) Descriptor() ([]byte, []int) {
-	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{9}
+	return file_internal_sfu_proto_sfu_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SignalResponse) GetSessionId() string {
@@ -683,7 +743,9 @@ const file_internal_sfu_proto_sfu_proto_rawDesc = "" +
 	"\x04Join\"\x0e\n" +
 	"\fJoinResponse\".\n" +
 	"\x05Leave\x12%\n" +
-	"\x0eparticipant_id\x18\x02 \x01(\tR\rparticipantId\"\x9e\x02\n" +
+	"\x0eparticipant_id\x18\x02 \x01(\tR\rparticipantId\"$\n" +
+	"\tSubscribe\x12\x17\n" +
+	"\apeer_id\x18\x01 \x01(\tR\x06peerId\"\xce\x02\n" +
 	"\rSignalRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12%\n" +
@@ -693,7 +755,8 @@ const file_internal_sfu_proto_sfu_proto_rawDesc = "" +
 	"\x03sdp\x18\x05 \x01(\v2\x17.sfu.SessionDescriptionH\x00R\x03sdp\x121\n" +
 	"\tcandidate\x18\x06 \x01(\v2\x11.sfu.IceCandidateH\x00R\tcandidate\x12\"\n" +
 	"\x05leave\x18\a \x01(\v2\n" +
-	".sfu.LeaveH\x00R\x05leaveB\t\n" +
+	".sfu.LeaveH\x00R\x05leave\x12.\n" +
+	"\tsubscribe\x18\b \x01(\v2\x0e.sfu.SubscribeH\x00R\tsubscribeB\t\n" +
 	"\apayload\"\xda\x01\n" +
 	"\x0eSignalResponse\x12\x1d\n" +
 	"\n" +
@@ -720,7 +783,7 @@ func file_internal_sfu_proto_sfu_proto_rawDescGZIP() []byte {
 	return file_internal_sfu_proto_sfu_proto_rawDescData
 }
 
-var file_internal_sfu_proto_sfu_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_internal_sfu_proto_sfu_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_internal_sfu_proto_sfu_proto_goTypes = []any{
 	(*HealthCheckRequest)(nil),   // 0: sfu.HealthCheckRequest
 	(*HealthCheckResponse)(nil),  // 1: sfu.HealthCheckResponse
@@ -730,25 +793,27 @@ var file_internal_sfu_proto_sfu_proto_goTypes = []any{
 	(*Join)(nil),                 // 5: sfu.Join
 	(*JoinResponse)(nil),         // 6: sfu.JoinResponse
 	(*Leave)(nil),                // 7: sfu.Leave
-	(*SignalRequest)(nil),        // 8: sfu.SignalRequest
-	(*SignalResponse)(nil),       // 9: sfu.SignalResponse
+	(*Subscribe)(nil),            // 8: sfu.Subscribe
+	(*SignalRequest)(nil),        // 9: sfu.SignalRequest
+	(*SignalResponse)(nil),       // 10: sfu.SignalResponse
 }
 var file_internal_sfu_proto_sfu_proto_depIdxs = []int32{
-	5, // 0: sfu.SignalRequest.join:type_name -> sfu.Join
-	3, // 1: sfu.SignalRequest.sdp:type_name -> sfu.SessionDescription
-	4, // 2: sfu.SignalRequest.candidate:type_name -> sfu.IceCandidate
-	7, // 3: sfu.SignalRequest.leave:type_name -> sfu.Leave
-	3, // 4: sfu.SignalResponse.sdp:type_name -> sfu.SessionDescription
-	4, // 5: sfu.SignalResponse.candidate:type_name -> sfu.IceCandidate
-	0, // 6: sfu.SFUService.HealthCheck:input_type -> sfu.HealthCheckRequest
-	8, // 7: sfu.SFUService.Signal:input_type -> sfu.SignalRequest
-	1, // 8: sfu.SFUService.HealthCheck:output_type -> sfu.HealthCheckResponse
-	9, // 9: sfu.SFUService.Signal:output_type -> sfu.SignalResponse
-	8, // [8:10] is the sub-list for method output_type
-	6, // [6:8] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	5,  // 0: sfu.SignalRequest.join:type_name -> sfu.Join
+	3,  // 1: sfu.SignalRequest.sdp:type_name -> sfu.SessionDescription
+	4,  // 2: sfu.SignalRequest.candidate:type_name -> sfu.IceCandidate
+	7,  // 3: sfu.SignalRequest.leave:type_name -> sfu.Leave
+	8,  // 4: sfu.SignalRequest.subscribe:type_name -> sfu.Subscribe
+	3,  // 5: sfu.SignalResponse.sdp:type_name -> sfu.SessionDescription
+	4,  // 6: sfu.SignalResponse.candidate:type_name -> sfu.IceCandidate
+	0,  // 7: sfu.SFUService.HealthCheck:input_type -> sfu.HealthCheckRequest
+	9,  // 8: sfu.SFUService.Signal:input_type -> sfu.SignalRequest
+	1,  // 9: sfu.SFUService.HealthCheck:output_type -> sfu.HealthCheckResponse
+	10, // 10: sfu.SFUService.Signal:output_type -> sfu.SignalResponse
+	9,  // [9:11] is the sub-list for method output_type
+	7,  // [7:9] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_internal_sfu_proto_sfu_proto_init() }
@@ -756,13 +821,14 @@ func file_internal_sfu_proto_sfu_proto_init() {
 	if File_internal_sfu_proto_sfu_proto != nil {
 		return
 	}
-	file_internal_sfu_proto_sfu_proto_msgTypes[8].OneofWrappers = []any{
+	file_internal_sfu_proto_sfu_proto_msgTypes[9].OneofWrappers = []any{
 		(*SignalRequest_Join)(nil),
 		(*SignalRequest_Sdp)(nil),
 		(*SignalRequest_Candidate)(nil),
 		(*SignalRequest_Leave)(nil),
+		(*SignalRequest_Subscribe)(nil),
 	}
-	file_internal_sfu_proto_sfu_proto_msgTypes[9].OneofWrappers = []any{
+	file_internal_sfu_proto_sfu_proto_msgTypes[10].OneofWrappers = []any{
 		(*SignalResponse_Sdp)(nil),
 		(*SignalResponse_Candidate)(nil),
 	}
@@ -772,7 +838,7 @@ func file_internal_sfu_proto_sfu_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_sfu_proto_sfu_proto_rawDesc), len(file_internal_sfu_proto_sfu_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

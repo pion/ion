@@ -8,6 +8,10 @@ let roomId = null;
 let localStream = null;
 let joined = false;
 
+// New state for toggling publisher tracks
+let pubSenders = [];
+let publishingTracks = false;
+
 const joinBtn = document.getElementById('joinBtn');
 const logEl = document.getElementById('log');
 const roomInfoEl = document.getElementById('roomInfo');
@@ -16,6 +20,11 @@ const messageInput = document.getElementById('messageInput');
 const sendBtn = document.getElementById('sendBtn');
 const localVideo = document.getElementById('localVideo');
 const remoteVideo = document.getElementById('remoteVideo');
+
+// NEW: UI controls for testing subscription / track toggle
+const toggleTrackBtn = document.getElementById('toggleTrackBtn');
+const subscribePeerIdInput = document.getElementById('subscribePeerId');
+const subscribeBtn = document.getElementById('subscribeBtn');
 
 function log(msg) {
     console.log(msg);
@@ -115,7 +124,6 @@ function createPeerConnections() {
         }
     };
 
-
     // DataChannel on publisher PC
     dc = pcPub.createDataChannel("echo");
     dc.onopen = () => log("DataChannel open (pcPub)");
@@ -151,7 +159,7 @@ async function joinRoom() {
             const msg = JSON.parse(event.data);
 
             if (msg.type === "answer" && msg.role === "publisher") {
-                // Answer to our initial publish offer
+                // Answer to our publish offer (initial or renegotiation)
                 log("Received answer (publisher)");
                 await pcPub.setRemoteDescription({
                     type: "answer",
@@ -219,32 +227,93 @@ async function joinRoom() {
             ws.addEventListener("error", reject, { once: true });
         });
 
-        // Create PCs & publish local media on pcPub
+        // Create PCs and get local media, but DO NOT add tracks yet.
+        // We'll add/remove tracks via the Toggle Track button.
         createPeerConnections();
-        const stream = await getLocalMedia();
-        stream.getTracks().forEach((track) => {
-            pcPub.addTrack(track, stream);
-        });
+        await getLocalMedia();
 
-        // Initial offer as publisher
-        if (pcPub.signalingState === "stable") {
-            log("Creating publisher offer");
-            const offer = await pcPub.createOffer();
-            await pcPub.setLocalDescription(offer);
-
-            log("Sending offer (publisher)");
-            ws.send(JSON.stringify({
-                type: "offer",
-                role: "publisher",
-                sdp: offer.sdp,
-            }));
-        }
+        log("Joined room, ready to toggle publisher tracks and subscribe.");
 
     } catch (err) {
         log("Error: " + err);
         joinBtn.disabled = false;
         joined = false;
     }
+}
+
+// Toggle adding/removing local tracks from pcPub and renegotiate
+async function togglePublisherTracks() {
+    if (!pcPub || !localStream || !ws || ws.readyState !== WebSocket.OPEN) {
+        log("Cannot toggle tracks: missing pcPub/localStream/ws");
+        return;
+    }
+
+    try {
+        if (!publishingTracks) {
+            // Add all local tracks to pcPub
+            log("Adding local tracks to publisher");
+            pubSenders = localStream.getTracks().map((track) =>
+                pcPub.addTrack(track, localStream)
+            );
+            publishingTracks = true;
+            toggleTrackBtn.textContent = "Remove Track(s)";
+
+        } else {
+            // Remove tracks
+            log("Removing local tracks from publisher");
+            for (const sender of pubSenders) {
+                try {
+                    await pcPub.removeTrack(sender);
+                } catch (err) {
+                    log("Error removing sender: " + err);
+                }
+            }
+            pubSenders = [];
+            publishingTracks = false;
+            toggleTrackBtn.textContent = "Add Track(s)";
+        }
+
+        // Renegotiate as publisher
+        if (pcPub.signalingState === "have-local-offer") {
+            log("pcPub already has local offer, waiting for answer; skip renegotiation.");
+            return;
+        }
+
+        log("Creating publisher offer for (re)negotiation");
+        const offer = await pcPub.createOffer();
+        await pcPub.setLocalDescription(offer);
+
+        log("Sending offer (publisher)");
+        ws.send(JSON.stringify({
+            type: "offer",
+            role: "publisher",
+            sdp: offer.sdp,
+        }));
+    } catch (err) {
+        log("Error in togglePublisherTracks: " + err);
+    }
+}
+
+// Send a subscribe control message to server:
+// server should map this to SFU UpdateSubscriptions(subscriber=this peer, publisher=given ID)
+function sendSubscribeRequest() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        log("Cannot subscribe: WebSocket not open");
+        return;
+    }
+    const targetPeerId = subscribePeerIdInput.value.trim();
+    if (!targetPeerId) {
+        log("Please enter a publisher peer ID to subscribe to.");
+        return;
+    }
+
+    log("Sending subscribe request for publisher peer " + targetPeerId);
+    ws.send(JSON.stringify({
+        type: "subscribe",
+        publisher_peer_id: targetPeerId,
+        // you could also add more fields here if your backend expects them
+        // e.g., { subscriber_role: "subscriber" } or similar
+    }));
 }
 
 joinBtn.addEventListener("click", () => {
@@ -259,4 +328,13 @@ sendBtn.addEventListener("click", () => {
     dc.send(text);
     log("Sent via DataChannel: " + text);
     messageInput.value = "";
+});
+
+// NEW: wire up the UI controls
+toggleTrackBtn.addEventListener("click", () => {
+    togglePublisherTracks();
+});
+
+subscribeBtn.addEventListener("click", () => {
+    sendSubscribeRequest();
 });

@@ -21,10 +21,11 @@ var upgrader = websocket.Upgrader{
 }
 
 type signalMessage struct {
-	Type      string          `json:"type"`           // "offer", "answer", "candidate"
-	Role      string          `json:"role,omitempty"` // "publisher" or "subscriber"
-	SDP       string          `json:"sdp,omitempty"`
-	Candidate json.RawMessage `json:"candidate,omitempty"`
+	Type            string          `json:"type"`           // "offer", "answer", "candidate"
+	Role            string          `json:"role,omitempty"` // "publisher" or "subscriber"
+	SDP             string          `json:"sdp,omitempty"`
+	Candidate       json.RawMessage `json:"candidate,omitempty"`
+	PublisherPeerID string          `json:"publisher_peer_id,omitempty"`
 }
 
 type iceCandidateJSON struct {
@@ -213,6 +214,23 @@ func SignalHandler(workerClient proto.SFUServiceClient) http.HandlerFunc {
 						wsErrCh <- err
 						return
 					}
+				case "subscribe":
+					log.Printf("Subscribe: %s", msg.PublisherPeerID)
+					log.Printf("msg: %v", msg)
+					req := &proto.SignalRequest{
+						SessionId:     roomID,
+						ParticipantId: participantID,
+						PeerId:        peerID,
+						Payload: &proto.SignalRequest_Subscribe{
+							Subscribe: &proto.Subscribe{
+								PeerId: msg.PublisherPeerID,
+							},
+						},
+					}
+					if err := stream.Send(req); err != nil {
+						wsErrCh <- err
+						return
+					}
 				default:
 					log.Printf("Unknown WS msg type: %s", msg.Type)
 				}
@@ -267,6 +285,7 @@ func SignalHandler(workerClient proto.SFUServiceClient) http.HandlerFunc {
 			_ = stream.Send(&proto.SignalRequest{
 				SessionId:     roomID,
 				ParticipantId: participantID,
+				PeerId:        peerID,
 				Payload:       &proto.SignalRequest_Leave{Leave: &proto.Leave{}},
 			})
 		case err := <-grpcErrCh:

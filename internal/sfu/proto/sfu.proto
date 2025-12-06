@@ -40,6 +40,10 @@ message Leave {
   string participant_id = 2;
 }
 
+message Subscribe {
+  string peer_id = 1;
+}
+
 message SignalRequest {
   string session_id        = 1;
   string participant_id = 2;
@@ -50,6 +54,7 @@ message SignalRequest {
     SessionDescription sdp      = 5;
     IceCandidate      candidate = 6;
     Leave             leave     = 7;
+    Subscribe         subscribe = 8;
   }
 }
 
