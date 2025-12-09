@@ -6,7 +6,7 @@ toolchain go1.25.5
 
 require (
 	github.com/pion/turn/v4 v4.1.3
-	github.com/pion/webrtc/v4 v4.1.7
+	github.com/pion/webrtc/v4 v4.1.8
 	github.com/prometheus/client_golang v1.23.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
@@ -29,7 +29,7 @@ require (
 	github.com/pion/sctp v1.8.41 // indirect
 	github.com/pion/sdp/v3 v3.0.16 // indirect
 	github.com/pion/srtp/v3 v3.0.9 // indirect
-	github.com/pion/stun/v3 v3.0.1 // indirect
+	github.com/pion/stun/v3 v3.0.2 // indirect
 	github.com/pion/transport/v3 v3.1.1 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/net v0.47.0 // indirect
