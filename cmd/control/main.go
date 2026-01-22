@@ -156,6 +156,15 @@ func SignalHandler(workerClient proto.SFUServiceClient) http.HandlerFunc {
 		}
 		peerID := resp.PeerId
 
+		if err := ws.WriteJSON(map[string]string{
+			"type":    "join",
+			"room_id": roomID,
+			"peer_id": peerID,
+		}); err != nil {
+			log.Printf("ws write join error: %v", err)
+			return
+		}
+
 		var sendMu sync.Mutex
 		sendWS := func(v any) error {
 			sendMu.Lock()

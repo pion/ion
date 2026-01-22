@@ -23,8 +23,27 @@ type PublisherOptions func(*Publisher)
 
 func WithDefaultPublisherOptions() PublisherOptions {
 	return func(p *Publisher) {
-
-		p.pc, _ = webrtc.NewPeerConnection(webrtc.Configuration{})
+		config := webrtc.Configuration{
+			ICEServers: []webrtc.ICEServer{
+				{URLs: []string{"stun:stun.l.google.com:19302"}},
+				{
+					URLs:       []string{"turn:openrelay.metered.ca:80"},
+					Username:   "openrelayproject",
+					Credential: "openrelayproject",
+				},
+				{
+					URLs:       []string{"turn:openrelay.metered.ca:443"},
+					Username:   "openrelayproject",
+					Credential: "openrelayproject",
+				},
+				{
+					URLs:       []string{"turn:openrelay.metered.ca:443?transport=tcp"},
+					Username:   "openrelayproject",
+					Credential: "openrelayproject",
+				},
+			},
+		}
+		p.pc, _ = webrtc.NewPeerConnection(config)
 
 		p.pc.OnICECandidate(func(c *webrtc.ICECandidate) {
 			if c == nil {

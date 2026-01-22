@@ -58,7 +58,22 @@ async function getLocalMedia() {
 function createPeerConnections() {
     const config = {
         iceServers: [
-            // { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun.l.google.com:19302" },
+            {
+                urls: "turn:openrelay.metered.ca:80",
+                username: "openrelayproject",
+                credential: "openrelayproject",
+            },
+            {
+                urls: "turn:openrelay.metered.ca:443",
+                username: "openrelayproject",
+                credential: "openrelayproject",
+            },
+            {
+                urls: "turn:openrelay.metered.ca:443?transport=tcp",
+                username: "openrelayproject",
+                credential: "openrelayproject",
+            },
         ],
     };
 
@@ -158,7 +173,11 @@ async function joinRoom() {
         ws.onmessage = async (event) => {
             const msg = JSON.parse(event.data);
 
-            if (msg.type === "answer" && msg.role === "publisher") {
+            if (msg.type === "join") {
+                log("Joined! My Peer ID: " + msg.peer_id);
+                // Auto-fill the subscribe input for convenience (loopback test)
+                subscribePeerIdInput.value = msg.peer_id;
+            } else if (msg.type === "answer" && msg.role === "publisher") {
                 // Answer to our publish offer (initial or renegotiation)
                 log("Received answer (publisher)");
                 await pcPub.setRemoteDescription({

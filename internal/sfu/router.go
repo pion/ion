@@ -137,17 +137,78 @@ func (tr *trackRouter) AddSink(subPeer Peer) {
 		return
 	}
 
-	tr.sinks[subID] = &sink{
+	s := &sink{
 		peerID:     subID,
 		localTrack: localTrack,
 		sender:     sender,
 	}
+	tr.sinks[subID] = s
+
+	// Start RTCP reading goroutine for this sender to forward feedback to publisher
+	go tr.readAndForwardRTCP(s)
+
+	// Request initial keyframe for video tracks
 	if tr.track.Kind() == webrtc.RTPCodecTypeVideo {
 		tr.pubPeer.Publisher().pc.WriteRTCP(
 			[]rtcp.Packet{
 				&rtcp.PictureLossIndication{MediaSSRC: uint32(tr.track.SSRC())},
 			},
 		)
+	}
+}
+
+// readAndForwardRTCP reads RTCP packets from a subscriber's sender and forwards
+// relevant feedback back to the publisher
+func (tr *trackRouter) readAndForwardRTCP(s *sink) {
+	for {
+		select {
+		case <-tr.stopCh:
+			return
+		default:
+		}
+
+		packets, _, err := s.sender.ReadRTCP()
+		if err != nil {
+			// Connection closed or error, exit gracefully
+			return
+		}
+
+		var forwardPackets []rtcp.Packet
+		for _, pkt := range packets {
+			switch p := pkt.(type) {
+			case *rtcp.PictureLossIndication:
+				forwardPackets = append(forwardPackets, &rtcp.PictureLossIndication{
+					MediaSSRC: uint32(tr.track.SSRC()),
+				})
+				tr.logger.Debug("Forwarding PLI to publisher", "subscriber", s.peerID)
+
+			case *rtcp.FullIntraRequest:
+				forwardPackets = append(forwardPackets, &rtcp.FullIntraRequest{
+					MediaSSRC: uint32(tr.track.SSRC()),
+				})
+				tr.logger.Debug("Forwarding FIR to publisher", "subscriber", s.peerID)
+
+			case *rtcp.TransportLayerNack:
+				forwardPackets = append(forwardPackets, &rtcp.TransportLayerNack{
+					MediaSSRC: uint32(tr.track.SSRC()),
+					Nacks:     p.Nacks,
+				})
+				tr.logger.Debug("Forwarding NACK to publisher", "subscriber", s.peerID, "nacks", len(p.Nacks))
+
+			case *rtcp.ReceiverEstimatedMaximumBitrate:
+				forwardPackets = append(forwardPackets, &rtcp.ReceiverEstimatedMaximumBitrate{
+					Bitrate: p.Bitrate,
+					SSRCs:   []uint32{uint32(tr.track.SSRC())},
+				})
+				tr.logger.Debug("Forwarding REMB to publisher", "subscriber", s.peerID, "bitrate", p.Bitrate)
+			}
+		}
+
+		if len(forwardPackets) > 0 {
+			if err := tr.pubPeer.Publisher().pc.WriteRTCP(forwardPackets); err != nil {
+				tr.logger.Debug("Failed to forward RTCP to publisher", "error", err)
+			}
+		}
 	}
 }
 

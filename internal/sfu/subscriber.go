@@ -24,8 +24,27 @@ type SubscriberOptions func(*Subscriber)
 
 func WithDefaultSubscriberOptions() SubscriberOptions {
 	return func(s *Subscriber) {
-
-		s.pc, _ = webrtc.NewPeerConnection(webrtc.Configuration{})
+		config := webrtc.Configuration{
+			ICEServers: []webrtc.ICEServer{
+				{URLs: []string{"stun:stun.l.google.com:19302"}},
+				{
+					URLs:       []string{"turn:openrelay.metered.ca:80"},
+					Username:   "openrelayproject",
+					Credential: "openrelayproject",
+				},
+				{
+					URLs:       []string{"turn:openrelay.metered.ca:443"},
+					Username:   "openrelayproject",
+					Credential: "openrelayproject",
+				},
+				{
+					URLs:       []string{"turn:openrelay.metered.ca:443?transport=tcp"},
+					Username:   "openrelayproject",
+					Credential: "openrelayproject",
+				},
+			},
+		}
+		s.pc, _ = webrtc.NewPeerConnection(config)
 		s.pc.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo, webrtc.RTPTransceiverInit{
 			Direction: webrtc.RTPTransceiverDirectionRecvonly,
 		})
