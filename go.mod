@@ -2,7 +2,7 @@ module github.com/pion/ion/v2
 
 go 1.25.0
 
-toolchain go1.27.0
+toolchain go1.27.1
 
 require (
 	github.com/pion/turn/v4 v4.1.4
