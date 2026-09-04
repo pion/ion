@@ -6,6 +6,7 @@ toolchain go1.27.1
 
 require (
 	github.com/pion/turn/v4 v4.1.4
+	github.com/pion/turn/v5 v5.1.0
 	github.com/pion/webrtc/v4 v4.2.20
 	github.com/prometheus/client_golang v1.24.1
 	github.com/spf13/pflag v1.0.10
@@ -32,7 +33,6 @@ require (
 	github.com/pion/stun/v3 v3.1.7 // indirect
 	github.com/pion/stun/v4 v4.0.0 // indirect
 	github.com/pion/transport/v4 v4.1.0 // indirect
-	github.com/pion/turn/v5 v5.1.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
