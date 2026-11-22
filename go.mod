@@ -6,7 +6,7 @@ toolchain go1.27.4
 
 require (
 	github.com/pion/turn/v4 v4.1.4
-	github.com/pion/webrtc/v4 v4.2.28
+	github.com/pion/webrtc/v4 v4.2.29
 	github.com/prometheus/client_golang v1.25.0
 	github.com/spf13/pflag v1.1.0
 	github.com/spf13/viper v1.21.0
